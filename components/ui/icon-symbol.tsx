@@ -17,6 +17,7 @@ const MAPPING = {
   "house.fill": "home",
   "music.note.list": "queue-music",
   "sparkles": "auto-awesome",
+  "paintpalette.fill": "palette",
   "magnifyingglass": "search",
   "person.crop.circle": "account-circle",
   "paperplane.fill": "send",

@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, type View as ViewType } from "react-native";
+import { useRef } from "react";
 
 import { AlbumArt } from "@/components/sphynx/album-art";
 import { haptic } from "@/lib/haptics";
 import { type Track, useSphynx } from "@/lib/sphynx-store";
+import { useArtworkTransition } from "./artwork-transition";
 
 export function SourceBadge({ provider }: { provider: Track["provider"] }) {
   const { theme } = useSphynx();
@@ -61,7 +63,19 @@ export function TrackRow({ track, index, onMore }: { track: Track; index?: numbe
 
 export function MiniPlayer() {
   const router = useRouter();
-  const { theme, currentTrack, isPlaying, progress, togglePlayback } = useSphynx();
+  const artworkRef = useRef<ViewType>(null);
+  const { beginArtworkTransition } = useArtworkTransition();
+  const { sound, theme, currentTrack, isPlaying, progress, togglePlayback } = useSphynx();
+  const openPlayer = () => {
+    if (sound.motionReduced || !artworkRef.current) {
+      router.push("/now-playing");
+      return;
+    }
+    artworkRef.current.measureInWindow((x, y, width, height) => {
+      if (width > 0 && height > 0) beginArtworkTransition(currentTrack, { x, y, width, height });
+      router.push("/now-playing");
+    });
+  };
   return (
     <View style={[styles.miniPlayerShell, { borderColor: theme.border, backgroundColor: theme.raised }]}>
       <View style={[styles.progressTrack, { backgroundColor: theme.border }]}>
@@ -69,10 +83,10 @@ export function MiniPlayer() {
       </View>
       <Pressable
         accessibilityLabel="Open now playing"
-        onPress={() => router.push("/now-playing")}
+        onPress={openPlayer}
         style={({ pressed }) => [styles.miniTapArea, pressed && styles.pressed]}
       >
-        <AlbumArt artwork={currentTrack.artwork} size={42} radius={11} />
+        <View ref={artworkRef} collapsable={false}><AlbumArt artwork={currentTrack.artwork} size={42} radius={11} /></View>
         <View style={styles.miniCopy}>
           <Text numberOfLines={1} style={[styles.miniTitle, { color: theme.foreground }]}>
             {currentTrack.title}

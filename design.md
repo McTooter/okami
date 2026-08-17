@@ -80,3 +80,18 @@ Sound Lab exposes music controls that can be represented accurately on-device: f
 ## Implementation quality bar
 
 Each screen must earn its visual complexity through a usable task. No screen will use filler recommendations, fake statistics, generic welcome statements, stock-profile avatars, rounded-card mosaics, decorative graphs, or ungrounded premium claims. Content states must be honest: disconnected services explain the next action, unavailable data is labeled as unavailable, and controls affecting audio give immediate, readable feedback.
+
+## Playback continuity and Theme Studio
+
+Sphynx treats the active artwork as a persistent object. Opening **Now Playing** from the Mini Player launches an app-owned artwork overlay that begins in the Mini Player’s measured bounds, then resolves into the Listening Field artwork shell once that screen is laid out. It is intentionally not an experimental navigator-level shared-element transition. This keeps the gesture interruptible, allows an opacity-only fallback for Reduced Motion, and avoids known tab-navigation limitations.
+
+The **Queue Sheet** is a focused bottom sheet rather than a new feed. It exposes the current sequence, visible source provenance, a drag handle that starts reordering on long press, auto-scroll at the sheet edge, and separate move-up/move-down buttons so the operation remains available with assistive technology. Moving a row changes what will play next, but does not interrupt or replace the active track.
+
+The new **Theme Studio** is a fifth tab. It changes an independent **app material** layer, not the user’s base theme, library, provider connections, DSP preferences, or playback queue. Base palette and accessibility comfort controls remain in Theme Atelier. Theme Studio initially exposes two original variants that are informed by the research’s broad interaction principles without copying a game interface.
+
+| App material | Original visual vocabulary | Functional changes | Motion contract |
+|---|---|---|---|
+| **Noir Pulse** | Soot, bone-white type, a vermilion cue rail, and tightly bounded orbital detail. | Raises selected states, queue drag affordance, tab cue, and Listening Field contrast. | A 160 ms directional cue on selection; no idle theatrics outside playback. |
+| **Sunlit Signal** | Warm paper, amber light, muted indigo metadata, and a broadcast-card edge. | Softens sheet framing, secondary labels, route chips, and the Listening Field bloom. | A 220 ms card reveal; ambient drift stays below 4 pixels. |
+
+> These are original Sphynx materials. They deliberately avoid protected game names, characters, typefaces, screen layouts, music, or artwork.

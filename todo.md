@@ -38,3 +38,10 @@
 - [x] Add an original interactive 3D audio visual and performance-conscious native shader treatment to Now Playing.
 - [x] Refine scrolling, navigation, and Sound Lab transitions for a quieter, more intentional interface.
 - [x] Validate visual states, accessibility, performance safeguards, TypeScript, linting, and deterministic tests.
+- [x] Research kinetic game-interface references and translate their general principles into original Sphynx theme directions.
+- [x] Design the shared artwork transition, queue-reordering interaction, and per-theme Listening Field material model.
+- [x] Implement an interruptible shared artwork transition between Mini Player and Now Playing.
+- [x] Build a real queue sheet with accessible gesture-driven drag-and-drop reordering and clear playback continuity.
+- [x] Add a dedicated Theme Studio tab that changes the wider app material system, beginning with original Noir Pulse and Sunlit Signal directions.
+- [x] Tune the 3D Listening Field’s shader and motion materials per theme, with reduced-motion safeguards.
+- [x] Validate transitions, queue ordering, theme states, accessibility, TypeScript, linting, and deterministic tests.

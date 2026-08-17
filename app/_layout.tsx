@@ -9,6 +9,7 @@ import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { SphynxProvider } from "@/lib/sphynx-store";
+import { ArtworkTransitionProvider } from "@/components/sphynx/artwork-transition";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -104,7 +105,7 @@ export default function RootLayout() {
         <SafeAreaProvider initialMetrics={providerInitialMetrics}>
           <SafeAreaFrameContext.Provider value={frame}>
             <SafeAreaInsetsContext.Provider value={insets}>
-              <SphynxProvider>{content}</SphynxProvider>
+              <SphynxProvider><ArtworkTransitionProvider>{content}</ArtworkTransitionProvider></SphynxProvider>
             </SafeAreaInsetsContext.Provider>
           </SafeAreaFrameContext.Provider>
         </SafeAreaProvider>
@@ -115,7 +116,7 @@ export default function RootLayout() {
   return (
       <ThemeProvider>
       <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-        <SphynxProvider>{content}</SphynxProvider>
+        <SphynxProvider><ArtworkTransitionProvider>{content}</ArtworkTransitionProvider></SphynxProvider>
       </SafeAreaProvider>
     </ThemeProvider>
   );

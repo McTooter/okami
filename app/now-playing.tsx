@@ -4,8 +4,10 @@ import { useState } from "react";
 import { GestureResponderEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
+import { useArtworkTransition } from "@/components/sphynx/artwork-transition";
 import { ListeningField } from "@/components/sphynx/listening-field";
 import { SourceBadge } from "@/components/sphynx/controls";
+import { QueueSheet } from "@/components/sphynx/queue-sheet";
 import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
 import { useSphynx } from "@/lib/sphynx-store";
@@ -47,7 +49,9 @@ function durationSeconds(duration: string) {
 
 export default function NowPlayingScreen() {
   const router = useRouter();
-  const { theme, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId, detectedAudioRoute, audioRouteDetectionAvailable, sound } = useSphynx();
+  const { setArtworkTarget } = useArtworkTransition();
+  const [queueVisible, setQueueVisible] = useState(false);
+  const { theme, material, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId, detectedAudioRoute, audioRouteDetectionAvailable, sound } = useSphynx();
   const activeGroup = headphoneGroups.find((group) => group.id === activeHeadphoneGroupId) ?? headphoneGroups[0];
   const detectedBluetoothName = detectedAudioRoute.kind === "bluetooth" ? detectedAudioRoute.name : null;
   const motionReduced = sound.motionReduced;
@@ -70,7 +74,7 @@ export default function NowPlayingScreen() {
         </Animated.View>
 
         <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(70).duration(420)}>
-          <ListeningField artwork={currentTrack.artwork} accent={currentTrack.accent} theme={theme} isPlaying={isPlaying} motionReduced={motionReduced} />
+          <ListeningField artwork={currentTrack.artwork} accent={currentTrack.accent} theme={theme} material={material} isPlaying={isPlaying} motionReduced={motionReduced} onArtworkMeasured={(rect) => setArtworkTarget(currentTrack.id, rect)} />
         </Animated.View>
 
         <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(130).duration(360)} style={styles.songInfo}>
@@ -141,7 +145,7 @@ export default function NowPlayingScreen() {
             <Text style={[styles.toolText, { color: theme.foreground }]}>Sound Lab</Text>
           </Pressable>
           <View style={[styles.toolDivider, { backgroundColor: theme.border }]} />
-          <Pressable onPress={haptic.selection} style={({ pressed }) => [styles.toolItem, pressed && styles.pressed]}>
+          <Pressable accessibilityLabel="Open queue" onPress={() => { haptic.selection(); setQueueVisible(true); }} style={({ pressed }) => [styles.toolItem, pressed && styles.pressed]}>
             <Ionicons name="list-outline" size={20} color={theme.accent} />
             <Text style={[styles.toolText, { color: theme.foreground }]}>Queue</Text>
           </Pressable>
@@ -153,6 +157,7 @@ export default function NowPlayingScreen() {
             {localPlaybackError ?? (currentTrack.localUri ? "Playing from a file stored privately on this iPhone." : currentTrack.available === "preview" ? "Preview behavior depends on the connected service." : currentTrack.available === "handoff" ? "This source may open through its approved player." : "Eligible local or Sphynx playback controls are available.")}
           </Text>
         </View>
+        <QueueSheet visible={queueVisible} onDismiss={() => setQueueVisible(false)} />
       </View>
     </ScreenContainer>
   );

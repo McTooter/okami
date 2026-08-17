@@ -6,6 +6,7 @@ import { createEqPreset, createHeadphoneGroup, DEFAULT_AUDIO_SETTINGS, DEFAULT_H
 import { nativeVolumeFromTrim } from "@/lib/advanced-audio-core";
 import { findMatchingHeadphoneGroup, UNKNOWN_AUDIO_ROUTE, type DetectedAudioRoute } from "@/lib/audio-route-core";
 import { buildDspPlaybackConfiguration } from "@/lib/dsp-player-core";
+import { applyQueueOrder, moveQueueId } from "@/lib/queue-core";
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
 import { pickLocalMusicFiles } from "@/lib/local-music";
 import { addAudioRouteListener, audioRouteDetectionAvailable, getCurrentAudioRoute } from "@/modules/expo-audio-route";
@@ -13,6 +14,7 @@ import { addDspPlaybackListener, dspPlaybackAvailable, getDspStatus, loadDspTrac
 
 export type ProviderId = "Sphynx" | "TIDAL" | "YouTube" | "Local";
 export type ThemeId = "obsidian" | "cobalt" | "porcelain" | "ember";
+export type AppMaterialId = "core" | "noir-pulse" | "sunlit-signal";
 
 export type Track = {
   id: string;
@@ -44,6 +46,26 @@ export type ThemeDefinition = {
   accentInk: string;
   danger: string;
   tabBar: string;
+};
+
+export type AppMaterial = {
+  id: AppMaterialId;
+  name: string;
+  note: string;
+  cue?: string;
+  cueInk?: string;
+  fieldAccent?: string;
+  fieldSecondary?: string;
+  shaderMode: 0 | 1 | 2;
+  shaderEnergy: number;
+  signalOpacity: number;
+  fieldRadius: number;
+};
+
+export const appMaterials: Record<AppMaterialId, AppMaterial> = {
+  core: { id: "core", name: "Studio Core", note: "Track-led mineral material", shaderMode: 0, shaderEnergy: 0.72, signalOpacity: 1, fieldRadius: 36 },
+  "noir-pulse": { id: "noir-pulse", name: "Noir Pulse", note: "Vermilion cueing with crisp orbital detail", cue: "#F05A47", cueInk: "#170504", fieldAccent: "#F05A47", fieldSecondary: "#F6EDE7", shaderMode: 1, shaderEnergy: 1.12, signalOpacity: 1.18, fieldRadius: 25 },
+  "sunlit-signal": { id: "sunlit-signal", name: "Sunlit Signal", note: "Warm broadcast light with softened indigo detail", cue: "#E7A628", cueInk: "#251B00", fieldAccent: "#E7A628", fieldSecondary: "#6874B8", shaderMode: 2, shaderEnergy: 0.82, signalOpacity: 0.78, fieldRadius: 42 },
 };
 
 export const themes: Record<ThemeId, ThemeDefinition> = {
@@ -184,6 +206,9 @@ type SphynxContextValue = {
   theme: ThemeDefinition;
   themeId: ThemeId;
   setThemeId: (theme: ThemeId) => void;
+  material: AppMaterial;
+  materialId: AppMaterialId;
+  setMaterialId: (material: AppMaterialId) => void;
   currentTrack: Track;
   queue: Track[];
   tracks: Track[];
@@ -199,6 +224,8 @@ type SphynxContextValue = {
   togglePlayback: () => void;
   playTrack: (track: Track) => void;
   skip: (direction: "next" | "previous") => void;
+  reorderQueue: (tracks: Track[]) => void;
+  moveQueueTrack: (trackId: string, direction: "up" | "down") => void;
   sound: SoundSettings;
   setSound: (patch: Partial<SoundSettings>) => void;
   eqPresets: EqPreset[];
@@ -231,6 +258,7 @@ const SphynxContext = createContext<SphynxContextValue | null>(null);
 
 export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [themeId, setThemeIdState] = useState<ThemeId>("obsidian");
+  const [materialId, setMaterialIdState] = useState<AppMaterialId>("core");
   const [sound, setSoundState] = useState<SoundSettings>(defaultSound);
   const [connected, setConnectedState] = useState<Record<ProviderId, boolean>>({
     Sphynx: true,
@@ -239,6 +267,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     Local: true,
   });
   const [currentTrack, setCurrentTrack] = useState<Track>(libraryTracks[0]);
+  const [queueOrder, setQueueOrder] = useState<string[]>(() => libraryTracks.map((track) => track.id));
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0.36);
   const [importedTracks, setImportedTracks] = useState<Track[]>([]);
@@ -266,10 +295,14 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
         if (!stored) return;
         const parsed = JSON.parse(stored) as {
           themeId?: ThemeId;
+          materialId?: AppMaterialId;
+          queueOrder?: string[];
           sound?: Partial<SoundSettings>;
           connected?: Partial<Record<ProviderId, boolean>>;
         };
         if (parsed.themeId && themes[parsed.themeId]) setThemeIdState(parsed.themeId);
+        if (parsed.materialId && appMaterials[parsed.materialId]) setMaterialIdState(parsed.materialId);
+        if (Array.isArray(parsed.queueOrder)) setQueueOrder(parsed.queueOrder.filter((id): id is string => typeof id === "string"));
         if (parsed.sound) setSoundState((current) => normalizeAudioSettings({ ...current, ...parsed.sound, eq: parsed.sound?.eq ?? current.eq }));
         if (parsed.connected) setConnectedState((current) => ({ ...current, ...parsed.connected }));
       })
@@ -277,9 +310,9 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const preferences = JSON.stringify({ themeId, sound, connected });
+    const preferences = JSON.stringify({ themeId, materialId, queueOrder, sound, connected });
     AsyncStorage.setItem(STORAGE_KEY, preferences).catch(() => undefined);
-  }, [themeId, sound, connected]);
+  }, [connected, materialId, queueOrder, sound, themeId]);
 
   useEffect(() => {
     AsyncStorage.getItem(LOCAL_LIBRARY_KEY)
@@ -377,7 +410,11 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     setActiveEqPresetId(null);
   }, [activeHeadphoneGroupId, detectedAudioRoute, headphoneGroups]);
 
+  const tracks = useMemo(() => [...importedTracks, ...libraryTracks], [importedTracks]);
+  const queue = useMemo(() => applyQueueOrder(tracks, queueOrder), [queueOrder, tracks]);
+
   const setThemeId = useCallback((nextTheme: ThemeId) => setThemeIdState(nextTheme), []);
+  const setMaterialId = useCallback((nextMaterial: AppMaterialId) => setMaterialIdState(nextMaterial), []);
   const setSound = useCallback((patch: Partial<SoundSettings>) => {
     setSoundState((current) => normalizeAudioSettings({ ...current, ...patch, eq: patch.eq ?? current.eq }));
   }, []);
@@ -619,23 +656,27 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   }, [currentTrack, handleDspStatus, isPlaying, playLocalTrack]);
   const skip = useCallback(
     (direction: "next" | "previous") => {
-      const fullQueue = [...libraryTracks, ...importedTracks];
-      const currentIndex = fullQueue.findIndex((track) => track.id === currentTrack.id);
-      const nextIndex = nextTrackIndex(currentIndex, fullQueue.length, direction);
-      playTrack(fullQueue[nextIndex]);
+      const currentIndex = queue.findIndex((track) => track.id === currentTrack.id);
+      const nextIndex = nextTrackIndex(currentIndex, queue.length, direction);
+      playTrack(queue[nextIndex]);
     },
-    [currentTrack.id, importedTracks, playTrack],
+    [currentTrack.id, playTrack, queue],
   );
-
-  const tracks = useMemo(() => [...importedTracks, ...libraryTracks], [importedTracks]);
+  const reorderQueue = useCallback((nextQueue: Track[]) => setQueueOrder(nextQueue.map((track) => track.id)), []);
+  const moveQueueTrack = useCallback((trackId: string, direction: "up" | "down") => {
+    setQueueOrder(moveQueueId(queue.map((track) => track.id), trackId, direction));
+  }, [queue]);
 
   const value = useMemo<SphynxContextValue>(
     () => ({
       theme: themes[themeId],
       themeId,
       setThemeId,
+      material: appMaterials[materialId],
+      materialId,
+      setMaterialId,
       currentTrack,
-      queue: tracks,
+      queue,
       tracks,
       importedTracks,
       isPlaying,
@@ -649,6 +690,8 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       togglePlayback,
       playTrack,
       skip,
+      reorderQueue,
+      moveQueueTrack,
       sound,
       setSound,
       eqPresets,
@@ -671,7 +714,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       localImportMessage,
       importLocalTracks,
     }),
-    [activeEqPresetId, activeHeadphoneGroupId, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, dspProcessingActive, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, renameHeadphoneGroup, saveEqPreset, setActiveHeadphoneGroupId, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
+    [activeEqPresetId, activeHeadphoneGroupId, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, dspProcessingActive, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, materialId, moveQueueTrack, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, queue, renameHeadphoneGroup, reorderQueue, saveEqPreset, setActiveHeadphoneGroupId, setConnected, setMaterialId, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
   );
 
   return <SphynxContext.Provider value={value}>{children}</SphynxContext.Provider>;

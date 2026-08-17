@@ -6,6 +6,7 @@ import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
 import { buildDspPlaybackConfiguration, isDspProcessingEnabled } from "../lib/dsp-player-core";
 import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/listening-field-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
+import { applyQueueOrder, moveQueueId } from "../lib/queue-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
 describe("Sphynx playback boundaries", () => {
@@ -19,6 +20,14 @@ describe("Sphynx playback boundaries", () => {
     expect(nextTrackIndex(5, 6, "next")).toBe(0);
     expect(nextTrackIndex(0, 6, "previous")).toBe(5);
     expect(nextTrackIndex(-1, 6, "next")).toBe(0);
+  });
+
+  it("preserves a curated queue order, appends newly available tracks, and supports accessible one-step movement", () => {
+    const tracks = [{ id: "a" }, { id: "b" }, { id: "c" }];
+    expect(applyQueueOrder(tracks, ["c", "a", "missing"])).toEqual([{ id: "c" }, { id: "a" }, { id: "b" }]);
+    expect(moveQueueId(["c", "a", "b"], "a", "up")).toEqual(["a", "c", "b"]);
+    expect(moveQueueId(["c", "a", "b"], "c", "up")).toEqual(["c", "a", "b"]);
+    expect(moveQueueId(["c", "a", "b"], "b", "down")).toEqual(["c", "a", "b"]);
   });
 
   it("wraps preview progress when a demo track reaches its terminal boundary", () => {

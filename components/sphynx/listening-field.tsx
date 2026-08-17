@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { PanResponder, StyleSheet, Text, View } from "react-native";
+import { PanResponder, StyleSheet, Text, View, type LayoutChangeEvent, type View as ViewType } from "react-native";
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import Svg, { Circle, Defs, LinearGradient, Line, Path, Rect, Stop } from "react-native-svg";
 
 import { AlbumArt } from "@/components/sphynx/album-art";
 import { listeningFieldTiltFromPoint } from "@/lib/listening-field-core";
-import type { ArtworkId, ThemeDefinition } from "@/lib/sphynx-store";
+import type { AppMaterial, ArtworkId, ThemeDefinition } from "@/lib/sphynx-store";
 import { ListeningShader } from "./listening-shader";
 
 const FIELD_MARKS = [
@@ -22,6 +22,8 @@ type ListeningFieldProps = {
   theme: ThemeDefinition;
   isPlaying: boolean;
   motionReduced: boolean;
+  material: AppMaterial;
+  onArtworkMeasured?: (rect: { x: number; y: number; width: number; height: number }) => void;
   size?: number;
 };
 
@@ -64,7 +66,8 @@ export function PlaybackPulse({ active, color, motionReduced }: { active: boolea
  * A contained, original vector composition that gives the active artwork
  * touch-responsive depth without claiming to represent source audio data.
  */
-export function ListeningField({ artwork, accent, theme, isPlaying, motionReduced, size = 286 }: ListeningFieldProps) {
+export function ListeningField({ artwork, accent, theme, isPlaying, motionReduced, material, onArtworkMeasured, size = 286 }: ListeningFieldProps) {
+  const artworkTargetRef = useRef<ViewType>(null);
   const bounds = useRef({ width: size, height: size });
   const tiltX = useSharedValue(0);
   const tiltY = useSharedValue(0);
@@ -137,6 +140,15 @@ export function ListeningField({ artwork, accent, theme, isPlaying, motionReduce
     transform: [{ scale: motionReduced ? 1 : 1.01 + drift.value * 0.025 }],
   }), [motionReduced]);
 
+  const visualAccent = material.fieldAccent ?? accent;
+  const visualSecondary = material.fieldSecondary ?? theme.foreground;
+
+  const reportArtworkTarget = (_: LayoutChangeEvent) => {
+    requestAnimationFrame(() => artworkTargetRef.current?.measureInWindow((x, y, width, height) => {
+      if (width > 0 && height > 0) onArtworkMeasured?.({ x, y, width, height });
+    }));
+  };
+
   return (
     <View
       accessible
@@ -151,37 +163,37 @@ export function ListeningField({ artwork, accent, theme, isPlaying, motionReduce
       style={[styles.field, { width: size, height: size, backgroundColor: theme.surface, borderColor: theme.border }]}
       {...panResponder.panHandlers}
     >
-      <Animated.View pointerEvents="none" style={[styles.colorBloom, { backgroundColor: accent }, glowStyle]} />
+      <Animated.View pointerEvents="none" style={[styles.colorBloom, { backgroundColor: visualAccent }, glowStyle]} />
       <Animated.View pointerEvents="none" style={[styles.shaderLayer, atmosphereStyle]}>
-        <ListeningShader accent={accent} foreground={theme.foreground} isPlaying={isPlaying} motionReduced={motionReduced} size={size} />
+        <ListeningShader accent={visualAccent} foreground={visualSecondary} isPlaying={isPlaying} motionReduced={motionReduced} size={size} mode={material.shaderMode} energy={material.shaderEnergy} />
       </Animated.View>
       <Animated.View pointerEvents="none" style={[styles.atmosphere, atmosphereStyle]}>
         <Svg height="100%" width="100%" viewBox="0 0 100 100">
           <Defs>
             <LinearGradient id="listening-field-fade" x1="0" x2="1" y1="0" y2="1">
-              <Stop offset="0" stopColor={accent} stopOpacity="0.52" />
+              <Stop offset="0" stopColor={visualAccent} stopOpacity={0.52 * material.signalOpacity} />
               <Stop offset="1" stopColor={theme.surface} stopOpacity="0" />
             </LinearGradient>
           </Defs>
           <Rect width="100" height="100" fill="url(#listening-field-fade)" opacity="0.28" />
-          <Circle cx="50" cy="50" r="38" fill="none" stroke={accent} strokeOpacity="0.3" strokeWidth="0.45" />
-          <Circle cx="50" cy="50" r="30" fill="none" stroke={theme.foreground} strokeOpacity="0.12" strokeWidth="0.32" />
-          <Circle cx="50" cy="50" r="47" fill="none" stroke={accent} strokeOpacity="0.17" strokeDasharray="1.4 3.6" strokeWidth="0.55" />
-          <Path d="M8 57 C24 42, 35 72, 52 50 S78 40, 94 57" fill="none" stroke={accent} strokeOpacity="0.45" strokeWidth="0.7" />
-          <Line x1="11" y1="50" x2="89" y2="50" stroke={theme.foreground} strokeOpacity="0.1" strokeWidth="0.35" />
-          {FIELD_MARKS.map((mark) => <Circle key={`${mark.x}-${mark.y}`} cx={mark.x} cy={mark.y} r={mark.r} fill={accent} fillOpacity="0.75" />)}
+          <Circle cx="50" cy="50" r="38" fill="none" stroke={visualAccent} strokeOpacity={0.3 * material.signalOpacity} strokeWidth="0.45" />
+          <Circle cx="50" cy="50" r="30" fill="none" stroke={visualSecondary} strokeOpacity="0.12" strokeWidth="0.32" />
+          <Circle cx="50" cy="50" r="47" fill="none" stroke={visualAccent} strokeOpacity={0.17 * material.signalOpacity} strokeDasharray={material.shaderMode === 1 ? "1 2.2" : "1.4 3.6"} strokeWidth="0.55" />
+          <Path d="M8 57 C24 42, 35 72, 52 50 S78 40, 94 57" fill="none" stroke={visualAccent} strokeOpacity={0.45 * material.signalOpacity} strokeWidth="0.7" />
+          <Line x1="11" y1="50" x2="89" y2="50" stroke={visualSecondary} strokeOpacity="0.1" strokeWidth="0.35" />
+          {FIELD_MARKS.map((mark) => <Circle key={`${mark.x}-${mark.y}`} cx={mark.x} cy={mark.y} r={mark.r} fill={visualAccent} fillOpacity={0.75 * material.signalOpacity} />)}
         </Svg>
       </Animated.View>
 
-      <Animated.View style={[styles.artDepth, artDepthStyle]}>
-        <View style={[styles.artShell, { backgroundColor: theme.raised, borderColor: theme.border }]}> 
+      <Animated.View ref={artworkTargetRef} collapsable={false} style={[styles.artDepth, artDepthStyle]} onLayout={reportArtworkTarget}>
+        <View style={[styles.artShell, { backgroundColor: theme.raised, borderColor: theme.border, borderRadius: material.fieldRadius - 2 }]}>
           <AlbumArt artwork={artwork} size={size - 28} radius={29} />
         </View>
       </Animated.View>
 
       <View pointerEvents="none" style={styles.fieldCaption}>
         <View style={styles.captionRow}>
-          <PlaybackPulse active={isPlaying} color={accent} motionReduced={motionReduced} />
+          <PlaybackPulse active={isPlaying} color={visualAccent} motionReduced={motionReduced} />
           <Text style={[styles.captionText, { color: theme.foreground }]}>LISTENING FIELD</Text>
         </View>
         <Text style={[styles.captionHint, { color: theme.muted }]}>{motionReduced ? "Motion reduced" : "Touch to shift depth"}</Text>

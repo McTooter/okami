@@ -4,6 +4,8 @@ type ListeningShaderProps = {
   isPlaying: boolean;
   motionReduced: boolean;
   size: number;
+  mode: 0 | 1 | 2;
+  energy: number;
 };
 
 /** Platform-specific native and web implementations override this fallback. */
