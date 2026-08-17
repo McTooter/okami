@@ -31,9 +31,12 @@ function Stepper({ label, value, onDecrease, onIncrease, unit }: { label: string
 
 export default function SoundLabScreen() {
   const router = useRouter();
-  const { theme, sound, setSound, eqPresets, activeEqPresetId, saveEqPreset, applyEqPreset, overwriteActiveEqPreset, deleteEqPreset } = useSphynx();
+  const { theme, sound, setSound, eqPresets, activeEqPresetId, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId, createHeadphoneGroup, renameHeadphoneGroup, deleteHeadphoneGroup, saveEqPreset, applyEqPreset, overwriteActiveEqPreset, deleteEqPreset } = useSphynx();
   const [presetName, setPresetName] = useState("");
+  const [deviceName, setDeviceName] = useState("");
   const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const activeGroup = headphoneGroups.find((group) => group.id === activeHeadphoneGroupId) ?? headphoneGroups[0];
+  const groupPresets = eqPresets.filter((preset) => preset.groupId === activeGroup.id);
   const applyPreset = (values: [number, number, number, number, number]) => { haptic.medium(); setSound({ eq: values }); };
   const adjustBand = (index: number) => {
     const next = [...sound.eq] as [number, number, number, number, number];
@@ -48,8 +51,18 @@ export default function SoundLabScreen() {
   };
   const shareSettings = async () => {
     haptic.medium();
-    const result = await exportAudioSettings(sound, eqPresets);
+    const result = await exportAudioSettings(sound, eqPresets, headphoneGroups, activeHeadphoneGroupId);
     setExportMessage(result.message);
+  };
+  const addDeviceGroup = () => {
+    haptic.medium();
+    createHeadphoneGroup(deviceName);
+    setDeviceName("");
+  };
+  const renameDeviceGroup = () => {
+    haptic.medium();
+    renameHeadphoneGroup(activeGroup.id, deviceName || activeGroup.name);
+    setDeviceName("");
   };
 
   return (
@@ -92,13 +105,49 @@ export default function SoundLabScreen() {
           </View>
         </View>
 
+        <View style={[styles.deviceCluster, { backgroundColor: theme.raised, borderColor: theme.border }]}>
+          <View style={styles.rackHeading}>
+            <View>
+              <Text style={[styles.rackTitle, { color: theme.foreground }]}>Listening device</Text>
+              <Text style={[styles.rackNote, { color: theme.muted }]}>Give every pair its own sound signature.</Text>
+            </View>
+            <Ionicons name="headset-outline" size={20} color={theme.accent} />
+          </View>
+          <View style={styles.deviceChips}>
+            {headphoneGroups.map((group) => {
+              const selected = group.id === activeHeadphoneGroupId;
+              return <Pressable key={group.id} accessibilityLabel={`Select ${group.name}`} onPress={() => { haptic.selection(); setActiveHeadphoneGroupId(group.id); }} style={({ pressed }) => [styles.deviceChip, { borderColor: selected ? theme.accent : theme.border, backgroundColor: selected ? theme.accent : theme.surface }, pressed && styles.pressed]}><Text numberOfLines={1} style={[styles.deviceChipText, { color: selected ? theme.accentInk : theme.foreground }]}>{group.name}</Text></Pressable>;
+            })}
+          </View>
+          <View style={styles.saveRow}>
+            <TextInput
+              accessibilityLabel="Name listening device"
+              value={deviceName}
+              onChangeText={setDeviceName}
+              placeholder={activeGroup.protected ? "Add device — e.g. Night cans" : `Rename ${activeGroup.name}`}
+              placeholderTextColor={theme.muted}
+              maxLength={32}
+              returnKeyType="done"
+              onSubmitEditing={addDeviceGroup}
+              style={[styles.presetInput, { color: theme.foreground, borderColor: theme.border, backgroundColor: theme.surface }]}
+            />
+            <Pressable accessibilityLabel="Add listening device" onPress={addDeviceGroup} style={({ pressed }) => [styles.saveButton, { backgroundColor: theme.accent }, pressed && styles.pressed]}><Ionicons name="add" size={19} color={theme.accentInk} /></Pressable>
+          </View>
+          {!activeGroup.protected ? (
+            <View style={styles.deviceActions}>
+              <Pressable accessibilityLabel={`Rename ${activeGroup.name}`} onPress={renameDeviceGroup} style={({ pressed }) => [styles.deviceAction, { borderColor: theme.border }, pressed && styles.pressed]}><Ionicons name="pencil-outline" size={14} color={theme.foreground} /><Text style={[styles.deviceActionText, { color: theme.foreground }]}>Rename selected</Text></Pressable>
+              <Pressable accessibilityLabel={`Delete ${activeGroup.name}`} onPress={() => { haptic.selection(); deleteHeadphoneGroup(activeGroup.id); }} style={({ pressed }) => [styles.deviceAction, { borderColor: theme.border }, pressed && styles.pressed]}><Ionicons name="trash-outline" size={14} color={theme.danger} /><Text style={[styles.deviceActionText, { color: theme.danger }]}>Remove group</Text></Pressable>
+            </View>
+          ) : <Text style={[styles.deviceFootnote, { color: theme.muted }]}>General audio keeps unassigned presets safe when a device group is removed.</Text>}
+        </View>
+
         <View style={[styles.deviceRack, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.rackHeading}>
             <View>
-              <Text style={[styles.rackTitle, { color: theme.foreground }]}>On this device</Text>
-              <Text style={[styles.rackNote, { color: theme.muted }]}>Private presets saved only to this Sphynx install.</Text>
+              <Text style={[styles.rackTitle, { color: theme.foreground }]}>{activeGroup.name} presets</Text>
+              <Text style={[styles.rackNote, { color: theme.muted }]}>Private EQ profiles for this listening device.</Text>
             </View>
-            <Text style={[styles.rackCount, { color: theme.accent }]}>{String(eqPresets.length).padStart(2, "0")}</Text>
+            <Text style={[styles.rackCount, { color: theme.accent }]}>{String(groupPresets.length).padStart(2, "0")}</Text>
           </View>
           <View style={styles.saveRow}>
             <TextInput
@@ -116,9 +165,9 @@ export default function SoundLabScreen() {
               <Ionicons name="bookmark-outline" size={17} color={theme.accentInk} />
             </Pressable>
           </View>
-          {eqPresets.length ? (
+          {groupPresets.length ? (
             <View style={styles.savedPresets}>
-              {eqPresets.map((preset) => {
+              {groupPresets.map((preset) => {
                 const active = preset.id === activeEqPresetId;
                 return (
                   <View key={preset.id} style={[styles.savedPreset, { borderColor: active ? theme.accent : theme.border, backgroundColor: active ? theme.raised : theme.surface }]}>
@@ -134,7 +183,7 @@ export default function SoundLabScreen() {
                 );
               })}
             </View>
-          ) : <Text style={[styles.emptyRack, { color: theme.muted }]}>Save the field you are shaping to recall it at any time.</Text>}
+          ) : <Text style={[styles.emptyRack, { color: theme.muted }]}>Save the field you are shaping to recall it with {activeGroup.name}.</Text>}
           {activeEqPresetId ? (
             <Pressable accessibilityLabel="Overwrite active EQ preset" onPress={() => { haptic.medium(); overwriteActiveEqPreset(); }} style={({ pressed }) => [styles.overwriteButton, { borderColor: theme.border }, pressed && styles.pressed]}>
               <Ionicons name="refresh-outline" size={15} color={theme.foreground} />
@@ -200,6 +249,7 @@ const styles = StyleSheet.create({
   preset: { flex: 1, minHeight: 32, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center", paddingHorizontal: 5 },
   presetText: { fontSize: 10, fontWeight: "700" },
   deviceRack: { borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginBottom: 15 },
+  deviceCluster: { borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginBottom: 15 },
   rackHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   rackTitle: { fontSize: 16, fontWeight: "800" },
   rackNote: { fontSize: 10, lineHeight: 14, marginTop: 3, maxWidth: 244 },
@@ -207,6 +257,13 @@ const styles = StyleSheet.create({
   saveRow: { flexDirection: "row", gap: 8, marginTop: 15 },
   presetInput: { flex: 1, height: 42, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, paddingHorizontal: 12, fontSize: 13, fontWeight: "700" },
   saveButton: { width: 43, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 12 },
+  deviceChips: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 14 },
+  deviceChip: { maxWidth: "100%", minHeight: 32, paddingHorizontal: 10, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, justifyContent: "center" },
+  deviceChipText: { fontSize: 10, fontWeight: "800" },
+  deviceActions: { flexDirection: "row", gap: 8, marginTop: 10 },
+  deviceAction: { flex: 1, minHeight: 33, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 5, paddingHorizontal: 7 },
+  deviceActionText: { fontSize: 9, fontWeight: "800" },
+  deviceFootnote: { fontSize: 10, lineHeight: 14, marginTop: 10 },
   savedPresets: { gap: 7, marginTop: 10 },
   savedPreset: { minHeight: 46, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, flexDirection: "row", alignItems: "center" },
   savedPresetMain: { flex: 1, minWidth: 0, minHeight: 44, flexDirection: "row", alignItems: "center", paddingHorizontal: 11, gap: 9 },

@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from "expo-audio";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-import { createEqPreset, type EqPreset } from "@/lib/audio-settings-core";
+import { createEqPreset, createHeadphoneGroup, DEFAULT_HEADPHONE_GROUP, normalizeHeadphoneGroupName, type EqPreset, type HeadphoneGroup } from "@/lib/audio-settings-core";
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
 import { pickLocalMusicFiles } from "@/lib/local-music";
 
@@ -204,6 +204,12 @@ type SphynxContextValue = {
   setSound: (patch: Partial<SoundSettings>) => void;
   eqPresets: EqPreset[];
   activeEqPresetId: string | null;
+  headphoneGroups: HeadphoneGroup[];
+  activeHeadphoneGroupId: string;
+  setActiveHeadphoneGroupId: (groupId: string) => void;
+  createHeadphoneGroup: (name: string) => void;
+  renameHeadphoneGroup: (groupId: string, name: string) => void;
+  deleteHeadphoneGroup: (groupId: string) => void;
   saveEqPreset: (name: string) => void;
   applyEqPreset: (preset: EqPreset) => void;
   overwriteActiveEqPreset: () => void;
@@ -251,6 +257,8 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [localPlaybackError, setLocalPlaybackError] = useState<string | null>(null);
   const [eqPresets, setEqPresets] = useState<EqPreset[]>([]);
   const [activeEqPresetId, setActiveEqPresetId] = useState<string | null>(null);
+  const [headphoneGroups, setHeadphoneGroups] = useState<HeadphoneGroup[]>([DEFAULT_HEADPHONE_GROUP]);
+  const [activeHeadphoneGroupId, setActiveHeadphoneGroupIdState] = useState(DEFAULT_HEADPHONE_GROUP.id);
   const [eqPresetsHydrated, setEqPresetsHydrated] = useState(false);
   const nativePlayerRef = useRef<AudioPlayer | null>(null);
   const nativeTrackIdRef = useRef<string | null>(null);
@@ -296,8 +304,15 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.getItem(EQ_PRESET_STORAGE_KEY)
       .then((stored) => {
         if (!stored) return;
-        const parsed = JSON.parse(stored) as { presets?: EqPreset[]; activeId?: string | null };
-        if (Array.isArray(parsed.presets)) setEqPresets(parsed.presets);
+        const parsed = JSON.parse(stored) as { presets?: EqPreset[]; activeId?: string | null; groups?: HeadphoneGroup[]; activeGroupId?: string | null };
+        const storedGroups = Array.isArray(parsed.groups) ? parsed.groups.filter((group) => group?.id && group?.name) : [];
+        const groups = storedGroups.some((group) => group.id === DEFAULT_HEADPHONE_GROUP.id) ? storedGroups : [DEFAULT_HEADPHONE_GROUP, ...storedGroups];
+        const groupIds = new Set(groups.map((group) => group.id));
+        if (Array.isArray(parsed.presets)) {
+          setEqPresets(parsed.presets.map((preset) => ({ ...preset, groupId: groupIds.has(preset.groupId) ? preset.groupId : DEFAULT_HEADPHONE_GROUP.id })));
+        }
+        setHeadphoneGroups(groups);
+        setActiveHeadphoneGroupIdState(parsed.activeGroupId && groupIds.has(parsed.activeGroupId) ? parsed.activeGroupId : DEFAULT_HEADPHONE_GROUP.id);
         if (parsed.activeId) setActiveEqPresetId(parsed.activeId);
       })
       .catch(() => undefined)
@@ -306,8 +321,8 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!eqPresetsHydrated) return;
-    AsyncStorage.setItem(EQ_PRESET_STORAGE_KEY, JSON.stringify({ presets: eqPresets, activeId: activeEqPresetId })).catch(() => undefined);
-  }, [activeEqPresetId, eqPresets, eqPresetsHydrated]);
+    AsyncStorage.setItem(EQ_PRESET_STORAGE_KEY, JSON.stringify({ presets: eqPresets, activeId: activeEqPresetId, groups: headphoneGroups, activeGroupId: activeHeadphoneGroupId })).catch(() => undefined);
+  }, [activeEqPresetId, activeHeadphoneGroupId, eqPresets, eqPresetsHydrated, headphoneGroups]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -340,10 +355,10 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const saveEqPreset = useCallback((name: string) => {
     const now = Date.now();
-    const preset = createEqPreset(`eq-${now}`, name, sound, now);
+    const preset = createEqPreset(`eq-${now}`, name, sound, now, activeHeadphoneGroupId);
     setEqPresets((current) => [preset, ...current]);
     setActiveEqPresetId(preset.id);
-  }, [sound]);
+  }, [activeHeadphoneGroupId, sound]);
   const applyEqPreset = useCallback((preset: EqPreset) => {
     setSoundState(preset.settings);
     setActiveEqPresetId(preset.id);
@@ -356,6 +371,29 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const deleteEqPreset = useCallback((presetId: string) => {
     setEqPresets((current) => current.filter((preset) => preset.id !== presetId));
     setActiveEqPresetId((current) => current === presetId ? null : current);
+  }, []);
+  const setActiveHeadphoneGroupId = useCallback((groupId: string) => {
+    setActiveHeadphoneGroupIdState((current) => headphoneGroups.some((group) => group.id === groupId) ? groupId : current);
+    setActiveEqPresetId(null);
+  }, [headphoneGroups]);
+  const createDeviceGroup = useCallback((name: string) => {
+    const now = Date.now();
+    const group = createHeadphoneGroup(`device-${now}`, name, now);
+    setHeadphoneGroups((current) => [...current, group]);
+    setActiveHeadphoneGroupIdState(group.id);
+    setActiveEqPresetId(null);
+  }, []);
+  const renameHeadphoneGroup = useCallback((groupId: string, name: string) => {
+    if (groupId === DEFAULT_HEADPHONE_GROUP.id) return;
+    const updatedAt = Date.now();
+    setHeadphoneGroups((current) => current.map((group) => group.id === groupId ? { ...group, name: normalizeHeadphoneGroupName(name), updatedAt } : group));
+  }, []);
+  const deleteHeadphoneGroup = useCallback((groupId: string) => {
+    if (groupId === DEFAULT_HEADPHONE_GROUP.id) return;
+    setHeadphoneGroups((current) => current.filter((group) => group.id !== groupId));
+    setEqPresets((current) => current.map((preset) => preset.groupId === groupId ? { ...preset, groupId: DEFAULT_HEADPHONE_GROUP.id } : preset));
+    setActiveHeadphoneGroupIdState((current) => current === groupId ? DEFAULT_HEADPHONE_GROUP.id : current);
+    setActiveEqPresetId(null);
   }, []);
   const setConnected = useCallback((provider: ProviderId, value: boolean) => {
     setConnectedState((current) => ({ ...current, [provider]: value }));
@@ -507,6 +545,12 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       setSound,
       eqPresets,
       activeEqPresetId,
+      headphoneGroups,
+      activeHeadphoneGroupId,
+      setActiveHeadphoneGroupId,
+      createHeadphoneGroup: createDeviceGroup,
+      renameHeadphoneGroup,
+      deleteHeadphoneGroup,
       saveEqPreset,
       applyEqPreset,
       overwriteActiveEqPreset,
@@ -517,7 +561,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       localImportMessage,
       importLocalTracks,
     }),
-    [activeEqPresetId, applyEqPreset, connected, currentTrack, deleteEqPreset, eqPresets, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, saveEqPreset, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
+    [activeEqPresetId, activeHeadphoneGroupId, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, renameHeadphoneGroup, saveEqPreset, setActiveHeadphoneGroupId, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
   );
 
   return <SphynxContext.Provider value={value}>{children}</SphynxContext.Provider>;

@@ -16,3 +16,6 @@
 - [x] Add device-local EQ preset persistence with creation, naming, apply, overwrite, and deletion controls.
 - [x] Add exportable Sphynx audio settings using a portable JSON file and native share flow.
 - [x] Add deterministic tests and validation for EQ preset and export payload behavior.
+- [x] Add persistent headphone-specific preset groups with create, select, rename, and delete actions.
+- [x] Make EQ preset creation, display, application, and overwrite behavior scoped to the selected headphone group.
+- [x] Extend portable audio-settings export and deterministic tests to retain headphone-group assignments.

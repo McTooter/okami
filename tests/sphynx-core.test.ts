@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAudioSettingsExport, createEqPreset, normalizePresetName } from "../lib/audio-settings-core";
+import { buildAudioSettingsExport, createEqPreset, createHeadphoneGroup, DEFAULT_HEADPHONE_GROUP, normalizeHeadphoneGroupName, normalizePresetName } from "../lib/audio-settings-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
@@ -42,15 +42,22 @@ describe("Sphynx playback boundaries", () => {
 
   it("builds a portable settings export without leaking mutable EQ references", () => {
     const sound = { preamp: 1.5, limiter: true, crossfade: 4, mono: false, eq: [1, 0, -1, 2, 0] as [number, number, number, number, number], motionReduced: false, typeScale: "standard" as const };
-    const preset = createEqPreset("eq-1", "  Studio   nearfields  ", sound, 1723982400000);
-    const exported = buildAudioSettingsExport(sound, [preset], new Date("2026-08-17T00:00:00.000Z"));
+    const group = createHeadphoneGroup("device-1", "  Audeze   LCD-X  ", 1723982400000);
+    const preset = createEqPreset("eq-1", "  Studio   nearfields  ", sound, 1723982400000, group.id);
+    const exported = buildAudioSettingsExport(sound, [preset], new Date("2026-08-17T00:00:00.000Z"), [DEFAULT_HEADPHONE_GROUP, group], group.id);
     sound.eq[0] = 3;
     expect(preset.name).toBe("Studio nearfields");
-    expect(exported).toMatchObject({ schemaVersion: 1, app: "Sphynx", exportedAt: "2026-08-17T00:00:00.000Z", sound: { eq: [1, 0, -1, 2, 0] }, eqPresets: [{ name: "Studio nearfields" }] });
+    expect(exported).toMatchObject({ schemaVersion: 1, app: "Sphynx", exportedAt: "2026-08-17T00:00:00.000Z", sound: { eq: [1, 0, -1, 2, 0] }, eqPresets: [{ name: "Studio nearfields", groupId: "device-1" }], headphoneGroups: [{ id: "general-audio", protected: true }, { id: "device-1", name: "Audeze LCD-X" }], activeHeadphoneGroupId: "device-1" });
   });
 
   it("keeps preset names compact and usable", () => {
     expect(normalizePresetName("     ")).toBe("Untitled preset");
     expect(normalizePresetName("A".repeat(40))).toHaveLength(32);
+  });
+
+  it("builds compact device-group names and keeps a stable general-audio fallback", () => {
+    expect(normalizeHeadphoneGroupName("     ")).toBe("Untitled device");
+    expect(normalizeHeadphoneGroupName("A".repeat(40))).toHaveLength(32);
+    expect(DEFAULT_HEADPHONE_GROUP).toMatchObject({ id: "general-audio", protected: true });
   });
 });
