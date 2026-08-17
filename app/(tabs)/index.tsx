@@ -1,48 +1,101 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { AlbumArt } from "@/components/sphynx/album-art";
+import { Metric, MiniPlayer, SectionHeading, SourceBadge, TrackRow } from "@/components/sphynx/controls";
 import { ScreenContainer } from "@/components/screen-container";
+import { haptic } from "@/lib/haptics";
+import { libraryTracks, type Track, useSphynx } from "@/lib/sphynx-store";
 
-/**
- * Home Screen - NativeWind Example
- *
- * This template uses NativeWind (Tailwind CSS for React Native).
- * You can use familiar Tailwind classes directly in className props.
- *
- * Key patterns:
- * - Use `className` instead of `style` for most styling
- * - Theme colors: use tokens directly (bg-background, text-foreground, bg-primary, etc.); no dark: prefix needed
- * - Responsive: standard Tailwind breakpoints work on web
- * - Custom colors defined in tailwind.config.js
- */
-export default function HomeScreen() {
+export default function LibraryScreen() {
+  const router = useRouter();
+  const { theme, currentTrack, isPlaying, playTrack } = useSphynx();
+
+  const openNowPlaying = () => {
+    haptic.light();
+    playTrack(currentTrack);
+    router.push("/now-playing" as never);
+  };
+
   return (
-    <ScreenContainer className="p-6">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 gap-8">
-          {/* Hero Section */}
-          <View className="items-center gap-2">
-            <Text className="text-4xl font-bold text-foreground">Welcome</Text>
-            <Text className="text-base text-muted text-center">
-              Edit app/(tabs)/index.tsx to get started
-            </Text>
-          </View>
+    <ScreenContainer containerStyle={{ backgroundColor: theme.background }} style={{ backgroundColor: theme.background }}>
+      <FlatList<Track>
+        data={libraryTracks}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        renderItem={({ item, index }) => <TrackRow track={item} index={index} />}
+        ListHeaderComponent={
+          <View>
+            <View style={styles.topLine}>
+              <View>
+                <Text style={[styles.kicker, { color: theme.accent }]}>SPHYNX / LIBRARY</Text>
+                <Text style={[styles.pageTitle, { color: theme.foreground }]}>Your music.</Text>
+              </View>
+              <Pressable
+                accessibilityLabel="Open search"
+                onPress={() => router.navigate("/search" as never)}
+                style={({ pressed }) => [styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}
+              >
+                <Ionicons name="search" size={20} color={theme.foreground} />
+              </Pressable>
+            </View>
 
-          {/* Example Card */}
-          <View className="w-full max-w-sm self-center bg-surface rounded-2xl p-6 shadow-sm border border-border">
-            <Text className="text-lg font-semibold text-foreground mb-2">NativeWind Ready</Text>
-            <Text className="text-sm text-muted leading-relaxed">
-              Use Tailwind CSS classes directly in your React Native components.
-            </Text>
-          </View>
+            <Pressable onPress={openNowPlaying} style={({ pressed }) => [styles.nowCard, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}>
+              <View style={styles.nowCardTop}>
+                <Text style={[styles.nowLabel, { color: theme.muted }]}>{isPlaying ? "PLAYING NOW" : "READY IN THE DECK"}</Text>
+                <SourceBadge provider={currentTrack.provider} />
+              </View>
+              <View style={styles.nowContent}>
+                <AlbumArt artwork={currentTrack.artwork} size={92} radius={20} />
+                <View style={styles.nowCopy}>
+                  <Text numberOfLines={2} style={[styles.nowTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
+                  <Text numberOfLines={1} style={[styles.nowArtist, { color: theme.muted }]}>{currentTrack.artist}</Text>
+                  <View style={styles.nowActionRow}>
+                    <View style={[styles.playPill, { backgroundColor: currentTrack.accent }]}>
+                      <Ionicons name={isPlaying ? "pause" : "play"} size={15} color={theme.accentInk} />
+                      <Text style={[styles.playPillText, { color: theme.accentInk }]}>{isPlaying ? "Resume" : "Play"}</Text>
+                    </View>
+                    <Text style={[styles.actionHint, { color: theme.muted }]}>Open player</Text>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
 
-          {/* Example Button */}
-          <View className="items-center">
-            <TouchableOpacity className="bg-primary px-6 py-3 rounded-full active:opacity-80">
-              <Text className="text-background font-semibold">Get Started</Text>
-            </TouchableOpacity>
+            <View style={[styles.metricBand, { borderColor: theme.border }]}>
+              <Metric value="248" label="Saved tracks" />
+              <Metric value="18:42" label="Downloaded" />
+              <Metric value="02" label="Sources" emphasis />
+            </View>
+
+            <SectionHeading eyebrow="Recently handled" title="Library rotation" action="Sort" onAction={haptic.selection} />
           </View>
-        </View>
-      </ScrollView>
+        }
+        ListFooterComponent={<View style={{ height: 82 }} />}
+        showsVerticalScrollIndicator={false}
+      />
+      <MiniPlayer />
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  list: { paddingHorizontal: 20, paddingTop: 18 },
+  topLine: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 },
+  kicker: { fontSize: 10, letterSpacing: 1.5, fontWeight: "800", marginBottom: 5 },
+  pageTitle: { fontSize: 31, lineHeight: 37, letterSpacing: -1.15, fontWeight: "800" },
+  iconButton: { width: 44, height: 44, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  nowCard: { borderRadius: 23, borderWidth: StyleSheet.hairlineWidth, padding: 14, marginBottom: 16 },
+  nowCardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 13 },
+  nowLabel: { fontSize: 10, letterSpacing: 1.15, fontWeight: "800" },
+  nowContent: { flexDirection: "row", gap: 14, alignItems: "center" },
+  nowCopy: { flex: 1, minWidth: 0 },
+  nowTitle: { fontSize: 21, lineHeight: 25, fontWeight: "800", letterSpacing: -0.45 },
+  nowArtist: { fontSize: 13, lineHeight: 18, marginTop: 4 },
+  nowActionRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
+  playPill: { height: 30, borderRadius: 15, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", gap: 5 },
+  playPillText: { fontSize: 12, fontWeight: "800" },
+  actionHint: { fontSize: 11, fontWeight: "600" },
+  metricBand: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 13, marginBottom: 26 },
+  pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
+});
