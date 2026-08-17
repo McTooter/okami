@@ -30,3 +30,21 @@ React Native Reanimated is already included in the Expo project and supports nat
 3. Figma, [Smart animate layers between frames](https://help.figma.com/hc/en-us/articles/360039818874-Smart-animate-layers-between-frames). Matching hierarchy, position, scale, opacity, rotation, and fill support continuous visual transitions.
 4. Unicorn Studio, [Overview](https://www.unicorn.studio/docs/). Its canvas combines depth, lighting, distortion, and interaction; Sphynx adapts the principle in a bounded native stage rather than duplicating web-centric effects.
 5. React Native Skia, [Runtime Shader](https://shopify.github.io/react-native-skia/docs/image-filters/runtime-shader/). Runtime shaders require pixel-density-aware composition for crisp output.
+
+## Animated album art and profile research
+
+Public music-platform guidance supports a clear constraint: motion artwork must preserve its static first frame, retain focus on the original cover, loop without a visible seam, and avoid frenetic flashing. Sphynx therefore treats animation as a light layer around each deterministic cover—small material glints, bounded parallax, and a slow playback-only pulse—rather than substituting the cover with unrelated video. The static cover remains complete when motion is disabled, paused, or unavailable.
+
+Streaming-profile research reinforces a different principle: switching identity should be deliberate, visible, and one tap away when a person meaningfully separates their listening history. Sphynx will use a local **Listening Identity** model—not an account or entitlement system—with a clear current-identity marker, taste cards derived from the existing library context, and a continuity choice for resuming the active queue. It will not copy Netflix names, profile art, or screen layouts.
+
+| Research finding | Original Sphynx translation |
+| --- | --- |
+| The first animation frame should represent the static album cover. | `AlbumArt` remains the visual anchor; animated overlays begin after the initial composed state. |
+| Music-motion loops should not use frantic flashing or unrelated cuts. | Cover treatments use low-frequency pulse, shallow depth, and contained cue accents. |
+| A profile selector prevents mixed personalization when the choice is highly visible. | Listening Identity appears at the top of Profile and exposes its active queue and taste context. |
+| A prompt is unnecessary for people who consistently use one identity. | Sphynx keeps the active identity persistent and offers switching from Profile rather than interrupting launch. |
+
+6. Apple Music, [Album Motion Guidelines](https://help.apple.com/itc/albummotionguide/en.lproj/static.html). The guide emphasizes a representative first frame, continuous loop, static-art continuity, and avoidance of frenetic flashing.
+7. Spotify for Artists, [Canvas](https://artists.spotify.com/en/canvas). Canvas illustrates the role of short, track-linked visual loops in a Now Playing context.
+8. CXL, [Analyzing Netflix Design, UI and UX](https://cxl.com/blog/netflix-design/). The analysis highlights simple personalization choices and a short, visible profile-selection flow.
+9. UX Magazine, [How Insight from Netflix Profiles Doubled Our Conversions](https://uxmag.com/articles/how-insight-from-netflix-profiles-doubled-our-conversions). The case study supports clearly exposing profile identity when it affects the user’s experience.

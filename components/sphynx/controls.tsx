@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { StyleSheet, Text, View, type View as ViewType } from "react-native";
 import { useRef } from "react";
 
-import { AlbumArt } from "@/components/sphynx/album-art";
+import { AnimatedAlbumArt } from "@/components/sphynx/animated-album-art";
 import { MotionPressable } from "@/components/sphynx/motion-pressable";
 import { haptic } from "@/lib/haptics";
 import { type Track, useSphynx } from "@/lib/sphynx-store";
@@ -37,7 +37,7 @@ export function TrackRow({ track, index, onMore }: { track: Track; index?: numbe
         </Text>
       ) : null}
       <MotionPressable onPress={play} style={styles.trackMain}>
-        <AlbumArt artwork={track.artwork} size={50} radius={12} />
+        <AnimatedAlbumArt artwork={track.artwork} size={50} radius={12} accent={track.accent} active={active} motionReduced={false} />
         <View style={styles.trackCopy}>
           <Text numberOfLines={1} style={[styles.trackTitle, { color: theme.foreground }]}>
             {track.title}
@@ -88,7 +88,9 @@ export function MiniPlayer() {
         onPress={openPlayer}
         style={styles.miniTapArea}
       >
-        <View ref={artworkRef} collapsable={false}><AlbumArt artwork={currentTrack.artwork} size={42} radius={11} /></View>
+        <View ref={artworkRef} collapsable={false}>
+          <AnimatedAlbumArt artwork={currentTrack.artwork} size={42} radius={11} accent={currentTrack.accent} active={isPlaying} motionReduced={sound.motionReduced} />
+        </View>
         <View style={styles.miniCopy}>
           <Text numberOfLines={1} style={[styles.miniTitle, { color: theme.foreground }]}>
             {currentTrack.title}

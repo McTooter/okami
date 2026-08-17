@@ -119,3 +119,18 @@ Sphynx primary controls are not static. Each press has a clear down state, a sho
 | **Panels and sheets** | Controls lift independently; the panel itself does not bounce. | Sections enter once, then remain still until user input or playback state changes. | Noir enters from the side; Sunlit enters from below. |
 
 Reduced Motion preserves all state changes through 100–150 ms opacity and color transitions, while removing transforms, continuous drift, and indicator travel.
+
+## Album motion and Listening Identity
+
+Album motion begins from the complete static cover, then adds a contained **cover atmosphere**: a translucent gradient wash, an offset signal frame, and one material-tuned parallax plane. Playback is the only trigger for continuous movement; pausing settles the cover into its composed static frame. Library thumbnails receive a one-time card reveal and selected-track cue, Mini Player receives a small active halo, and Now Playing receives the full cover atmosphere behind the existing Listening Field. The system never replaces an album cover with unrelated media, flashing, or fabricated artist imagery.
+
+Sphynx’s profile system is an original **Listening Identity** model. It is local to the app and separates taste and queue continuity, not music-service authorization, billing, or account permissions. The Profile screen foregrounds the active identity, offers compact choices for switching, and shows concrete listening context so people understand what will carry forward.
+
+| Surface | Primary behavior | Motion and continuity |
+|---|---|---|
+| **Animated cover** | Preserves the deterministic album art as its first and resting frame. | The atmosphere begins after the frame is established; it fades and settles when motion is reduced or playback pauses. |
+| **Listening Identity rail** | Lets the listener choose a local identity such as “Sora,” “Night Transit,” or “Guest Session.” | Selection lifts the chosen tile and updates the persistent identity marker; no launch-blocking chooser is shown. |
+| **Taste cards** | Give a transparent, small summary of current mood, saved sources, and active sound context. | Cards enter with a single material-specific offset and remain still until an identity changes. |
+| **Continuity control** | Makes it explicit whether the active queue follows the selected identity. | The state change has a concise cue sweep and haptic response, never a destructive reset without confirmation. |
+
+The profile direction is influenced only by the high-level streaming pattern of clear, compact identity selection and personalized continuity. It does not use Netflix marks, avatar styles, copy, account models, or layouts.

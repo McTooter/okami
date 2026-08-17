@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, FadeInDown, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
-import { AlbumArt } from "@/components/sphynx/album-art";
+import { AnimatedAlbumArt } from "@/components/sphynx/animated-album-art";
 import { Metric, MiniPlayer, SectionHeading, SourceBadge, TrackRow } from "@/components/sphynx/controls";
 import { PlaybackPulse } from "@/components/sphynx/listening-field";
 import { MotionPressable } from "@/components/sphynx/motion-pressable";
@@ -69,7 +69,7 @@ export default function LibraryScreen() {
                   <SourceBadge provider={currentTrack.provider} />
                 </View>
                 <View style={styles.nowContent}>
-                  <AlbumArt artwork={currentTrack.artwork} size={92} radius={20} />
+                  <AnimatedAlbumArt artwork={currentTrack.artwork} size={92} radius={20} accent={currentTrack.accent} active={isPlaying} motionReduced={motionReduced} />
                   <View style={styles.nowCopy}>
                     <Text numberOfLines={2} style={[styles.nowTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
                     <Text numberOfLines={1} style={[styles.nowArtist, { color: theme.muted }]}>{currentTrack.artist}</Text>

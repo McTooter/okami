@@ -52,3 +52,8 @@
 - [x] Define a non-static Sphynx motion system for press feedback, active states, section choreography, and material modes.
 - [x] Replace static primary controls and material surfaces with responsive animated interaction states.
 - [x] Validate animated controls, motion-reduction behavior, performance safeguards, TypeScript, linting, and deterministic tests.
+- [x] Research animated album-art interactions and streaming-profile patterns without reproducing third-party assets or layouts.
+- [x] Define Sphynx’s original animated-cover language and profile system for identity, taste, and listening continuity.
+- [x] Add reduced-motion-aware animated album-cover treatments to Library, Mini Player, and Now Playing.
+- [x] Build an original streaming-inspired Profile screen with profile switching, taste cards, and listening-continuity controls.
+- [x] Validate album animation, profile interactions, accessibility, TypeScript, linting, and deterministic tests.

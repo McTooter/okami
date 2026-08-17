@@ -3,7 +3,7 @@ import { PanResponder, StyleSheet, Text, View, type LayoutChangeEvent, type View
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import Svg, { Circle, Defs, LinearGradient, Line, Path, Rect, Stop } from "react-native-svg";
 
-import { AlbumArt } from "@/components/sphynx/album-art";
+import { AnimatedAlbumArt } from "@/components/sphynx/animated-album-art";
 import { listeningFieldTiltFromPoint } from "@/lib/listening-field-core";
 import type { AppMaterial, ArtworkId, ThemeDefinition } from "@/lib/sphynx-store";
 import { ListeningShader } from "./listening-shader";
@@ -187,7 +187,7 @@ export function ListeningField({ artwork, accent, theme, isPlaying, motionReduce
 
       <Animated.View ref={artworkTargetRef} collapsable={false} style={[styles.artDepth, artDepthStyle]} onLayout={reportArtworkTarget}>
         <View style={[styles.artShell, { backgroundColor: theme.raised, borderColor: theme.border, borderRadius: material.fieldRadius - 2 }]}>
-          <AlbumArt artwork={artwork} size={size - 28} radius={29} />
+          <AnimatedAlbumArt artwork={artwork} size={size - 28} radius={29} accent={visualAccent} active={isPlaying} motionReduced={motionReduced} />
         </View>
       </Animated.View>
 

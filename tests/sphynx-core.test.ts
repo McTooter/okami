@@ -5,6 +5,7 @@ import { clampAdvancedAudioSettings, nativeVolumeFromTrim } from "../lib/advance
 import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
 import { buildDspPlaybackConfiguration, isDspProcessingEnabled } from "../lib/dsp-player-core";
 import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/listening-field-core";
+import { findListeningProfile, normalizeProfileQueueOrders } from "../lib/listening-profile-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { applyQueueOrder, moveQueueId } from "../lib/queue-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
@@ -122,5 +123,11 @@ describe("Sphynx playback boundaries", () => {
     expect(listeningFieldTiltFromPoint(100, 100, 200, 200)).toEqual({ x: 0, y: 0 });
     expect(listeningFieldTiltFromPoint(500, -100, 200, 200)).toEqual({ x: MAX_LISTENING_FIELD_TILT, y: MAX_LISTENING_FIELD_TILT });
     expect(listeningFieldTiltFromPoint(Number.NaN, 40, 200, 200)).toEqual({ x: 0, y: 0 });
+  });
+
+  it("keeps Listening Identity local, stable, and limited to valid queue-order values", () => {
+    expect(findListeningProfile("night-transit")).toMatchObject({ name: "Night Transit", artwork: "horizon" });
+    expect(findListeningProfile("missing").id).toBe("sora");
+    expect(normalizeProfileQueueOrders({ sora: ["a", 1], "night-transit": ["b", "c"], other: ["z"] })).toEqual({ sora: ["a"], "night-transit": ["b", "c"] });
   });
 });
