@@ -3,8 +3,10 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatu
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { createEqPreset, createHeadphoneGroup, DEFAULT_HEADPHONE_GROUP, normalizeHeadphoneGroupName, type EqPreset, type HeadphoneGroup } from "@/lib/audio-settings-core";
+import { findMatchingHeadphoneGroup, UNKNOWN_AUDIO_ROUTE, type DetectedAudioRoute } from "@/lib/audio-route-core";
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
 import { pickLocalMusicFiles } from "@/lib/local-music";
+import { addAudioRouteListener, audioRouteDetectionAvailable, getCurrentAudioRoute } from "@/modules/expo-audio-route";
 
 export type ProviderId = "Sphynx" | "TIDAL" | "YouTube" | "Local";
 export type ThemeId = "obsidian" | "cobalt" | "porcelain" | "ember";
@@ -206,6 +208,8 @@ type SphynxContextValue = {
   activeEqPresetId: string | null;
   headphoneGroups: HeadphoneGroup[];
   activeHeadphoneGroupId: string;
+  detectedAudioRoute: DetectedAudioRoute;
+  audioRouteDetectionAvailable: boolean;
   setActiveHeadphoneGroupId: (groupId: string) => void;
   createHeadphoneGroup: (name: string) => void;
   renameHeadphoneGroup: (groupId: string, name: string) => void;
@@ -259,6 +263,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [activeEqPresetId, setActiveEqPresetId] = useState<string | null>(null);
   const [headphoneGroups, setHeadphoneGroups] = useState<HeadphoneGroup[]>([DEFAULT_HEADPHONE_GROUP]);
   const [activeHeadphoneGroupId, setActiveHeadphoneGroupIdState] = useState(DEFAULT_HEADPHONE_GROUP.id);
+  const [detectedAudioRoute, setDetectedAudioRoute] = useState<DetectedAudioRoute>(UNKNOWN_AUDIO_ROUTE);
   const [eqPresetsHydrated, setEqPresetsHydrated] = useState(false);
   const nativePlayerRef = useRef<AudioPlayer | null>(null);
   const nativeTrackIdRef = useRef<string | null>(null);
@@ -348,6 +353,33 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       nativeTrackIdRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!audioRouteDetectionAvailable) return;
+
+    let active = true;
+    getCurrentAudioRoute()
+      .then((route) => {
+        if (active) setDetectedAudioRoute(route);
+      })
+      .catch(() => undefined);
+
+    const subscription = addAudioRouteListener(({ route }) => {
+      if (active) setDetectedAudioRoute(route);
+    });
+
+    return () => {
+      active = false;
+      subscription?.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const matchingGroup = findMatchingHeadphoneGroup(detectedAudioRoute, headphoneGroups);
+    if (!matchingGroup || matchingGroup.id === activeHeadphoneGroupId) return;
+    setActiveHeadphoneGroupIdState(matchingGroup.id);
+    setActiveEqPresetId(null);
+  }, [activeHeadphoneGroupId, detectedAudioRoute, headphoneGroups]);
 
   const setThemeId = useCallback((nextTheme: ThemeId) => setThemeIdState(nextTheme), []);
   const setSound = useCallback((patch: Partial<SoundSettings>) => {
@@ -547,6 +579,8 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       activeEqPresetId,
       headphoneGroups,
       activeHeadphoneGroupId,
+      detectedAudioRoute,
+      audioRouteDetectionAvailable,
       setActiveHeadphoneGroupId,
       createHeadphoneGroup: createDeviceGroup,
       renameHeadphoneGroup,
@@ -561,7 +595,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       localImportMessage,
       importLocalTracks,
     }),
-    [activeEqPresetId, activeHeadphoneGroupId, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, renameHeadphoneGroup, saveEqPreset, setActiveHeadphoneGroupId, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
+    [activeEqPresetId, activeHeadphoneGroupId, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, renameHeadphoneGroup, saveEqPreset, setActiveHeadphoneGroupId, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
   );
 
   return <SphynxContext.Provider value={value}>{children}</SphynxContext.Provider>;

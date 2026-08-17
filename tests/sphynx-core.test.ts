@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildAudioSettingsExport, createEqPreset, createHeadphoneGroup, DEFAULT_HEADPHONE_GROUP, normalizeHeadphoneGroupName, normalizePresetName } from "../lib/audio-settings-core";
+import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
@@ -59,5 +60,15 @@ describe("Sphynx playback boundaries", () => {
     expect(normalizeHeadphoneGroupName("     ")).toBe("Untitled device");
     expect(normalizeHeadphoneGroupName("A".repeat(40))).toHaveLength(32);
     expect(DEFAULT_HEADPHONE_GROUP).toMatchObject({ id: "general-audio", protected: true });
+  });
+
+  it("auto-selects exactly one matching Bluetooth headphone group and ignores ambiguous or non-Bluetooth routes", () => {
+    const airPods = createHeadphoneGroup("device-airpods", "AirPods Pro", 1723982400000);
+    const studio = createHeadphoneGroup("device-studio", "Studio Headphones", 1723982400000);
+    const groups = [DEFAULT_HEADPHONE_GROUP, airPods, studio];
+
+    expect(findMatchingHeadphoneGroup({ kind: "bluetooth", name: "Alice’s AirPods Pro" }, groups)?.id).toBe("device-airpods");
+    expect(findMatchingHeadphoneGroup({ kind: "wired", name: "AirPods Pro" }, groups)).toBeNull();
+    expect(findMatchingHeadphoneGroup({ kind: "bluetooth", name: "AirPods" }, [DEFAULT_HEADPHONE_GROUP, createHeadphoneGroup("device-one", "AirPods", 1723982400000), createHeadphoneGroup("device-two", "AirPods", 1723982400000)])).toBeNull();
   });
 });

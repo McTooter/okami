@@ -21,3 +21,6 @@
 - [x] Extend portable audio-settings export and deterministic tests to retain headphone-group assignments.
 - [x] Add a compact Now Playing listening-device switcher with selected-group feedback and tactile switching.
 - [x] Preserve current playback and validate that device switching updates audio-control context without queue disruption.
+- [x] Add supported iOS audio-route observation without Bluetooth scanning or permission prompts, plus a safe unsupported-platform fallback.
+- [x] Match detected audio-device names to saved headphone groups and auto-select only a clear, non-general match.
+- [x] Expose detected-device status in Now Playing and validate no playback or queue interruption during auto-selection.

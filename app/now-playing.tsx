@@ -46,8 +46,9 @@ function durationSeconds(duration: string) {
 
 export default function NowPlayingScreen() {
   const router = useRouter();
-  const { theme, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId } = useSphynx();
+  const { theme, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId, detectedAudioRoute, audioRouteDetectionAvailable } = useSphynx();
   const activeGroup = headphoneGroups.find((group) => group.id === activeHeadphoneGroupId) ?? headphoneGroups[0];
+  const detectedBluetoothName = detectedAudioRoute.kind === "bluetooth" ? detectedAudioRoute.name : null;
 
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]} containerStyle={{ backgroundColor: theme.background }} style={{ backgroundColor: theme.background }}>
@@ -107,6 +108,12 @@ export default function NowPlayingScreen() {
               <Text style={[styles.deviceEyebrow, { color: theme.muted }]}>LISTENING ON</Text>
             </View>
             <Text numberOfLines={1} style={[styles.activeDeviceName, { color: theme.foreground }]}>{activeGroup.name}</Text>
+          </View>
+          <View style={styles.routeStatusRow}>
+            <Ionicons name={detectedBluetoothName ? "bluetooth" : "headset-outline"} size={12} color={detectedBluetoothName ? theme.accent : theme.muted} />
+            <Text numberOfLines={1} style={[styles.routeStatusText, { color: theme.muted }]}>
+              {detectedBluetoothName ? `${detectedBluetoothName} connected · matched to ${activeGroup.name}` : audioRouteDetectionAvailable ? "No matched Bluetooth listening device" : "Auto-select activates in a native Sphynx build"}
+            </Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.deviceChipRow}>
             {headphoneGroups.map((group) => {
@@ -176,6 +183,8 @@ const styles = StyleSheet.create({
   deviceLabel: { flexDirection: "row", alignItems: "center", gap: 5 },
   deviceEyebrow: { fontSize: 8, fontWeight: "800", letterSpacing: 0.9 },
   activeDeviceName: { flex: 1, minWidth: 0, textAlign: "right", fontSize: 10, fontWeight: "800" },
+  routeStatusRow: { minHeight: 17, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingTop: 5 },
+  routeStatusText: { flex: 1, fontSize: 9, lineHeight: 12, fontWeight: "600" },
   deviceChipRow: { paddingHorizontal: 12, paddingTop: 9, gap: 7 },
   deviceChip: { minHeight: 29, maxWidth: 150, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 4 },
   deviceChipText: { flexShrink: 1, fontSize: 10, fontWeight: "800" },
