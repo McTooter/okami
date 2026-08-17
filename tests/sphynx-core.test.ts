@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { buildAudioSettingsExport, createEqPreset, normalizePresetName } from "../lib/audio-settings-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
@@ -37,5 +38,19 @@ describe("Sphynx playback boundaries", () => {
 
   it("gives a valid fallback title when a selected file has no readable stem", () => {
     expect(buildLocalImportIdentity(".mp3", 1723982400000, 0).title).toBe("Untitled import");
+  });
+
+  it("builds a portable settings export without leaking mutable EQ references", () => {
+    const sound = { preamp: 1.5, limiter: true, crossfade: 4, mono: false, eq: [1, 0, -1, 2, 0] as [number, number, number, number, number], motionReduced: false, typeScale: "standard" as const };
+    const preset = createEqPreset("eq-1", "  Studio   nearfields  ", sound, 1723982400000);
+    const exported = buildAudioSettingsExport(sound, [preset], new Date("2026-08-17T00:00:00.000Z"));
+    sound.eq[0] = 3;
+    expect(preset.name).toBe("Studio nearfields");
+    expect(exported).toMatchObject({ schemaVersion: 1, app: "Sphynx", exportedAt: "2026-08-17T00:00:00.000Z", sound: { eq: [1, 0, -1, 2, 0] }, eqPresets: [{ name: "Studio nearfields" }] });
+  });
+
+  it("keeps preset names compact and usable", () => {
+    expect(normalizePresetName("     ")).toBe("Untitled preset");
+    expect(normalizePresetName("A".repeat(40))).toHaveLength(32);
   });
 });

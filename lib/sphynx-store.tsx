@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from "expo-audio";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
+import { createEqPreset, type EqPreset } from "@/lib/audio-settings-core";
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
 import { pickLocalMusicFiles } from "@/lib/local-music";
 
@@ -172,7 +173,7 @@ export const libraryTracks: Track[] = [
   },
 ];
 
-type SoundSettings = {
+export type SoundSettings = {
   preamp: number;
   limiter: boolean;
   crossfade: number;
@@ -201,6 +202,12 @@ type SphynxContextValue = {
   skip: (direction: "next" | "previous") => void;
   sound: SoundSettings;
   setSound: (patch: Partial<SoundSettings>) => void;
+  eqPresets: EqPreset[];
+  activeEqPresetId: string | null;
+  saveEqPreset: (name: string) => void;
+  applyEqPreset: (preset: EqPreset) => void;
+  overwriteActiveEqPreset: () => void;
+  deleteEqPreset: (presetId: string) => void;
   connected: Record<ProviderId, boolean>;
   setConnected: (provider: ProviderId, value: boolean) => void;
   isImporting: boolean;
@@ -210,6 +217,7 @@ type SphynxContextValue = {
 
 const STORAGE_KEY = "sphynx.preferences.v1";
 const LOCAL_LIBRARY_KEY = "sphynx.local-library.v1";
+const EQ_PRESET_STORAGE_KEY = "sphynx.eq-presets.v1";
 const defaultSound: SoundSettings = {
   preamp: 0,
   limiter: true,
@@ -241,6 +249,9 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [playbackSeconds, setPlaybackSeconds] = useState(0);
   const [playbackDuration, setPlaybackDuration] = useState(0);
   const [localPlaybackError, setLocalPlaybackError] = useState<string | null>(null);
+  const [eqPresets, setEqPresets] = useState<EqPreset[]>([]);
+  const [activeEqPresetId, setActiveEqPresetId] = useState<string | null>(null);
+  const [eqPresetsHydrated, setEqPresetsHydrated] = useState(false);
   const nativePlayerRef = useRef<AudioPlayer | null>(null);
   const nativeTrackIdRef = useRef<string | null>(null);
 
@@ -282,6 +293,23 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   }, [importedTracks, localLibraryHydrated]);
 
   useEffect(() => {
+    AsyncStorage.getItem(EQ_PRESET_STORAGE_KEY)
+      .then((stored) => {
+        if (!stored) return;
+        const parsed = JSON.parse(stored) as { presets?: EqPreset[]; activeId?: string | null };
+        if (Array.isArray(parsed.presets)) setEqPresets(parsed.presets);
+        if (parsed.activeId) setActiveEqPresetId(parsed.activeId);
+      })
+      .catch(() => undefined)
+      .finally(() => setEqPresetsHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (!eqPresetsHydrated) return;
+    AsyncStorage.setItem(EQ_PRESET_STORAGE_KEY, JSON.stringify({ presets: eqPresets, activeId: activeEqPresetId })).catch(() => undefined);
+  }, [activeEqPresetId, eqPresets, eqPresetsHydrated]);
+
+  useEffect(() => {
     if (!isPlaying) return;
     if (currentTrack.localUri) return;
     const timer = setInterval(() => {
@@ -309,6 +337,25 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const setThemeId = useCallback((nextTheme: ThemeId) => setThemeIdState(nextTheme), []);
   const setSound = useCallback((patch: Partial<SoundSettings>) => {
     setSoundState((current) => ({ ...current, ...patch }));
+  }, []);
+  const saveEqPreset = useCallback((name: string) => {
+    const now = Date.now();
+    const preset = createEqPreset(`eq-${now}`, name, sound, now);
+    setEqPresets((current) => [preset, ...current]);
+    setActiveEqPresetId(preset.id);
+  }, [sound]);
+  const applyEqPreset = useCallback((preset: EqPreset) => {
+    setSoundState(preset.settings);
+    setActiveEqPresetId(preset.id);
+  }, []);
+  const overwriteActiveEqPreset = useCallback(() => {
+    if (!activeEqPresetId) return;
+    const now = Date.now();
+    setEqPresets((current) => current.map((preset) => preset.id === activeEqPresetId ? { ...preset, settings: { ...sound, eq: [...sound.eq] as SoundSettings["eq"] }, updatedAt: now } : preset));
+  }, [activeEqPresetId, sound]);
+  const deleteEqPreset = useCallback((presetId: string) => {
+    setEqPresets((current) => current.filter((preset) => preset.id !== presetId));
+    setActiveEqPresetId((current) => current === presetId ? null : current);
   }, []);
   const setConnected = useCallback((provider: ProviderId, value: boolean) => {
     setConnectedState((current) => ({ ...current, [provider]: value }));
@@ -458,13 +505,19 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       skip,
       sound,
       setSound,
+      eqPresets,
+      activeEqPresetId,
+      saveEqPreset,
+      applyEqPreset,
+      overwriteActiveEqPreset,
+      deleteEqPreset,
       connected,
       setConnected,
       isImporting,
       localImportMessage,
       importLocalTracks,
     }),
-    [connected, currentTrack, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, playTrack, playbackDuration, playbackSeconds, progress, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
+    [activeEqPresetId, applyEqPreset, connected, currentTrack, deleteEqPreset, eqPresets, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, saveEqPreset, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
   );
 
   return <SphynxContext.Provider value={value}>{children}</SphynxContext.Provider>;

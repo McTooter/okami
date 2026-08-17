@@ -13,3 +13,6 @@
 - [x] Add device-local music-file selection, persistent imported-track metadata, and an import status surface.
 - [x] Integrate expo-audio for real playback, seek, queue switching, audio-mode handling, and player cleanup.
 - [x] Add deterministic tests and validation for local-import and playback-helper behavior.
+- [x] Add device-local EQ preset persistence with creation, naming, apply, overwrite, and deletion controls.
+- [x] Add exportable Sphynx audio settings using a portable JSON file and native share flow.
+- [x] Add deterministic tests and validation for EQ preset and export payload behavior.
