@@ -3,7 +3,9 @@ import type { PitchCorrectionQuality } from "expo-audio";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
+import { PlaybackPulse } from "@/components/sphynx/listening-field";
 import { ScreenContainer } from "@/components/screen-container";
 import { exportAudioSettings } from "@/lib/audio-settings-export";
 import { ENGINE_REQUIRED_CONTROLS, type LoudnessMode, type ResamplerMode } from "@/lib/advanced-audio-core";
@@ -39,6 +41,7 @@ export default function SoundLabScreen() {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const activeGroup = headphoneGroups.find((group) => group.id === activeHeadphoneGroupId) ?? headphoneGroups[0];
   const groupPresets = eqPresets.filter((preset) => preset.groupId === activeGroup.id);
+  const motionReduced = sound.motionReduced;
   const applyPreset = (values: [number, number, number, number, number]) => { haptic.medium(); setSound({ eq: values }); };
   const adjustBand = (index: number) => {
     const next = [...sound.eq] as [number, number, number, number, number];
@@ -81,15 +84,18 @@ export default function SoundLabScreen() {
         <Text style={[styles.pageTitle, { color: theme.foreground }]}>Shape the room, not the truth.</Text>
         <Text style={[styles.intro, { color: theme.muted }]}>Controls apply only where the active source and approved playback engine can honor them. High gain is intentionally guarded.</Text>
 
-        <View style={[styles.dspStatus, { backgroundColor: dspProcessingActive ? theme.accent : theme.raised, borderColor: dspProcessingActive ? theme.accent : theme.border }]}>
-          <Ionicons name={dspProcessingActive ? "pulse-outline" : "hardware-chip-outline"} size={17} color={dspProcessingActive ? theme.accentInk : theme.accent} />
+        <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(90).duration(320)} style={[styles.dspStatus, { backgroundColor: dspProcessingActive ? theme.accent : theme.raised, borderColor: dspProcessingActive ? theme.accent : theme.border }]}>
+          <View style={styles.dspIconWrap}>
+            <PlaybackPulse active={dspProcessingActive} color={dspProcessingActive ? theme.accentInk : theme.accent} motionReduced={motionReduced} />
+            <Ionicons name={dspProcessingActive ? "pulse-outline" : "hardware-chip-outline"} size={17} color={dspProcessingActive ? theme.accentInk : theme.accent} />
+          </View>
           <View style={styles.dspStatusCopy}>
             <Text style={[styles.dspStatusTitle, { color: dspProcessingActive ? theme.accentInk : theme.foreground }]}>{dspProcessingActive ? "Native DSP is processing this local track" : dspPlaybackAvailable ? "Native DSP ready" : "Standard player fallback"}</Text>
             <Text style={[styles.dspStatusNote, { color: dspProcessingActive ? theme.accentInk : theme.muted }]}>{dspProcessingActive ? "Parametric EQ, preamp, limiter, compressor, and loudness contour are active." : dspPlaybackAvailable ? currentTrack.localUri ? "Press play on an imported file to engage the native chain." : "Import a local track to use Sphynx’s Audio Unit chain." : "Custom iOS build required for live Audio Unit processing."}</Text>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={[styles.eqCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(140).duration(340)} style={[styles.eqCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.eqHeader}><Text style={[styles.eqTitle, { color: theme.foreground }]}>Five-band parametric EQ</Text><Text style={[styles.eqNote, { color: theme.muted }]}>Tap a band to step</Text></View>
           <View style={styles.bands}>
             {bands.map((band, index) => {
@@ -113,7 +119,7 @@ export default function SoundLabScreen() {
               </Pressable>
             ))}
           </View>
-        </View>
+        </Animated.View>
 
         <View style={[styles.deviceCluster, { backgroundColor: theme.raised, borderColor: theme.border }]}>
           <View style={styles.rackHeading}>
@@ -282,6 +288,7 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 30, lineHeight: 36, fontWeight: "800", letterSpacing: -1.1, maxWidth: 330 },
   intro: { fontSize: 13, lineHeight: 19, marginTop: 10, marginBottom: 24, maxWidth: 352 },
   dspStatus: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: 13, marginBottom: 15 },
+  dspIconWrap: { width: 18, height: 18, alignItems: "center", justifyContent: "center" },
   dspStatusCopy: { flex: 1 },
   dspStatusTitle: { fontSize: 12, fontWeight: "800" },
   dspStatusNote: { fontSize: 10, lineHeight: 14, marginTop: 3 },

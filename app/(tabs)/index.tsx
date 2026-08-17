@@ -1,16 +1,38 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { Easing, FadeInDown, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { AlbumArt } from "@/components/sphynx/album-art";
 import { Metric, MiniPlayer, SectionHeading, SourceBadge, TrackRow } from "@/components/sphynx/controls";
+import { PlaybackPulse } from "@/components/sphynx/listening-field";
 import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
 import { type Track, useSphynx } from "@/lib/sphynx-store";
 
 export default function LibraryScreen() {
   const router = useRouter();
-  const { theme, currentTrack, importedTracks, isImporting, isPlaying, localImportMessage, playTrack, importLocalTracks, tracks } = useSphynx();
+  const { theme, currentTrack, importedTracks, isImporting, isPlaying, localImportMessage, playTrack, importLocalTracks, tracks, sound } = useSphynx();
+  const scrollY = useSharedValue(0);
+  const motionReduced = sound.motionReduced;
+
+  useEffect(() => {
+    if (motionReduced) scrollY.value = withTiming(0, { duration: 100 });
+  }, [motionReduced, scrollY]);
+
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      if (!motionReduced) scrollY.value = event.contentOffset.y;
+    },
+  });
+  const heroParallaxStyle = useAnimatedStyle(() => {
+    const distance = Math.min(Math.max(scrollY.value, 0), 180);
+    return {
+      opacity: motionReduced ? 1 : 1 - distance / 1200,
+      transform: [{ translateY: motionReduced ? 0 : -distance * 0.07 }],
+    };
+  }, [motionReduced]);
 
   const openNowPlaying = () => {
     haptic.light();
@@ -25,9 +47,11 @@ export default function LibraryScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item, index }) => <TrackRow track={item} index={index} />}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <View>
-            <View style={styles.topLine}>
+            <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(340).easing(Easing.out(Easing.cubic))} style={[styles.topLine, heroParallaxStyle]}>
               <View>
                 <Text style={[styles.kicker, { color: theme.accent }]}>SPHYNX / LIBRARY</Text>
                 <Text style={[styles.pageTitle, { color: theme.foreground }]}>Your music.</Text>
@@ -39,11 +63,12 @@ export default function LibraryScreen() {
               >
                 <Ionicons name="search" size={20} color={theme.foreground} />
               </Pressable>
-            </View>
+            </Animated.View>
 
+            <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(90).duration(360).easing(Easing.out(Easing.cubic))}>
             <Pressable onPress={openNowPlaying} style={({ pressed }) => [styles.nowCard, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}>
               <View style={styles.nowCardTop}>
-                <Text style={[styles.nowLabel, { color: theme.muted }]}>{isPlaying ? "PLAYING NOW" : "READY IN THE DECK"}</Text>
+                <View style={styles.nowStatus}><PlaybackPulse active={isPlaying} color={theme.accent} motionReduced={motionReduced} /><Text style={[styles.nowLabel, { color: theme.muted }]}>{isPlaying ? "PLAYING NOW" : "READY IN THE DECK"}</Text></View>
                 <SourceBadge provider={currentTrack.provider} />
               </View>
               <View style={styles.nowContent}>
@@ -61,8 +86,9 @@ export default function LibraryScreen() {
                 </View>
               </View>
             </Pressable>
+            </Animated.View>
 
-            <Pressable
+            <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(145).duration(330).easing(Easing.out(Easing.cubic))}><Pressable
               accessibilityLabel="Import music files from this device"
               disabled={isImporting}
               onPress={() => { haptic.medium(); void importLocalTracks(); }}
@@ -77,6 +103,7 @@ export default function LibraryScreen() {
               </View>
               <Ionicons name="add" size={22} color={theme.accent} />
             </Pressable>
+            </Animated.View>
 
             <View style={[styles.metricBand, { borderColor: theme.border }]}>
               <Metric value={String(tracks.length)} label="Saved tracks" />
@@ -108,6 +135,7 @@ const styles = StyleSheet.create({
   importTitle: { fontSize: 14, fontWeight: "800" },
   importText: { fontSize: 11, lineHeight: 15, marginTop: 3 },
   nowCardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 13 },
+  nowStatus: { flexDirection: "row", alignItems: "center", gap: 6 },
   nowLabel: { fontSize: 10, letterSpacing: 1.15, fontWeight: "800" },
   nowContent: { flexDirection: "row", gap: 14, alignItems: "center" },
   nowCopy: { flex: 1, minWidth: 0 },

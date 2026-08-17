@@ -38,6 +38,20 @@ The main tab bar uses four destinations: **Library**, **Discover**, **Search**, 
 
 Tap targets use a minimum 44-point footprint. Primary controls use brief opacity/scale feedback and sparing haptics. Motion is functional: artwork expands toward Now Playing, the queue rises from its source control, and theme changes dissolve rather than theatrically animate. Motion can be reduced independently of the system setting from Theme Atelier.
 
+## Motion and interactive-visual system
+
+The visual signature is a **listening field**: a contained, touch-responsive depth stage that sits behind the active album artwork in Now Playing. It uses three deliberately restrained layers — a radial field, a small constellation of signal marks, and a shallow parallax card — rather than unrelated gradients or a full-screen animated backdrop. Pressing and dragging inside the stage shifts the perspective by a small, bounded amount; playback adds a slow, low-amplitude lift to the signal marks. The field is descriptive, not diagnostic, and never claims to visualize the waveform or underlying audio data.
+
+| Interaction surface | Behavior | Motion contract |
+|---|---|---|
+| **Library now-playing card** | Establishes the artwork as the anchor before the full player opens. | A single entrance fade and a breathing active indicator while playback is active. No looping card motion. |
+| **Now Playing listening field** | Gives album art depth and a controllable visual response. | Direct-touch tilt stays below 4 degrees. Releasing returns smoothly to rest. Playback drift stays within 2–4 pixels. |
+| **Transport and seek controls** | Acknowledge intent without delaying playback. | 80–160 ms press compression, haptic confirmation, and brief active-state emphasis. |
+| **Sound Lab** | Clarifies dense professional controls. | Small staged reveals on entry and short transitions between inactive, available, and processing states. |
+| **Reduced-motion mode** | Preserves hierarchy for people who want less movement. | Disables continuous drift and depth transforms; uses brief opacity changes only. |
+
+The implementation combines **Reanimated transforms**, a sparse SVG signal composition, and a small native **Skia Runtime Shader**. The shader is limited to the listening field, uses only a few uniforms, and remains low contrast so that it supports material depth instead of becoming a decorative full-screen effect. The web preview retains the SVG atmosphere rather than loading CanvasKit for one contained visual treatment.
+
 ## Color and material system
 
 The default visual language is **Obsidian + Signal Lime**, inspired by a precise studio device rather than a neon gaming interface. Light is used as an accent, not a background texture.

@@ -32,3 +32,9 @@
 - [x] Add real loudness processing controls, native playback-state bridging, and a clear standard-player fallback.
 - [x] Connect Sound Lab to DSP activation, configuration status, and validate settings translation and safe parameter boundaries.
 - [x] Correct root-podspec autolinking metadata and verify both local iOS bridges resolve for a custom build.
+- [x] Research premium iOS motion, interactive visual, and shader techniques appropriate for Sphynx.
+- [x] Define an art-directed interaction system with motion hierarchy, depth, and reduced-motion behavior.
+- [x] Upgrade the Library and Now Playing experience with responsive animated composition and tactile visual feedback.
+- [x] Add an original interactive 3D audio visual and performance-conscious native shader treatment to Now Playing.
+- [x] Refine scrolling, navigation, and Sound Lab transitions for a quieter, more intentional interface.
+- [x] Validate visual states, accessibility, performance safeguards, TypeScript, linting, and deterministic tests.

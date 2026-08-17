@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { GestureResponderEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
-import { AlbumArt } from "@/components/sphynx/album-art";
+import { ListeningField } from "@/components/sphynx/listening-field";
 import { SourceBadge } from "@/components/sphynx/controls";
 import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
@@ -46,15 +47,16 @@ function durationSeconds(duration: string) {
 
 export default function NowPlayingScreen() {
   const router = useRouter();
-  const { theme, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId, detectedAudioRoute, audioRouteDetectionAvailable } = useSphynx();
+  const { theme, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId, detectedAudioRoute, audioRouteDetectionAvailable, sound } = useSphynx();
   const activeGroup = headphoneGroups.find((group) => group.id === activeHeadphoneGroupId) ?? headphoneGroups[0];
   const detectedBluetoothName = detectedAudioRoute.kind === "bluetooth" ? detectedAudioRoute.name : null;
+  const motionReduced = sound.motionReduced;
 
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]} containerStyle={{ backgroundColor: theme.background }} style={{ backgroundColor: theme.background }}>
       <Stack.Screen options={{ presentation: "fullScreenModal", animation: "fade" }} />
       <View style={styles.page}>
-        <View style={styles.topBar}>
+        <Animated.View entering={motionReduced ? undefined : FadeIn.duration(260)} style={styles.topBar}>
           <Pressable accessibilityLabel="Close player" onPress={() => router.back()} style={({ pressed }) => [styles.chromeButton, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}>
             <Ionicons name="chevron-down" size={22} color={theme.foreground} />
           </Pressable>
@@ -65,13 +67,13 @@ export default function NowPlayingScreen() {
           <Pressable accessibilityLabel="Open more player options" onPress={haptic.selection} style={({ pressed }) => [styles.chromeButton, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}>
             <Ionicons name="ellipsis-horizontal" size={20} color={theme.foreground} />
           </Pressable>
-        </View>
+        </Animated.View>
 
-        <View style={[styles.artFrame, { borderColor: theme.border, backgroundColor: theme.surface }]}>
-          <AlbumArt artwork={currentTrack.artwork} size={286} radius={30} />
-        </View>
+        <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(70).duration(420)}>
+          <ListeningField artwork={currentTrack.artwork} accent={currentTrack.accent} theme={theme} isPlaying={isPlaying} motionReduced={motionReduced} />
+        </Animated.View>
 
-        <View style={styles.songInfo}>
+        <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(130).duration(360)} style={styles.songInfo}>
           <View style={styles.titleBlock}>
             <Text numberOfLines={2} style={[styles.songTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
             <Text numberOfLines={1} style={[styles.songArtist, { color: theme.muted }]}>{currentTrack.artist} · {currentTrack.album}</Text>
@@ -79,11 +81,11 @@ export default function NowPlayingScreen() {
           <Pressable accessibilityLabel="Save track" onPress={haptic.selection} style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}>
             <Ionicons name="add-circle-outline" size={28} color={theme.accent} />
           </Pressable>
-        </View>
+        </Animated.View>
 
-        <ProgressRail />
+        <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(180).duration(320)}><ProgressRail /></Animated.View>
 
-        <View style={styles.transportRow}>
+        <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(210).duration(300)} style={styles.transportRow}>
           <Pressable accessibilityLabel="Toggle shuffle" onPress={haptic.selection} style={({ pressed }) => [styles.minorControl, pressed && styles.pressed]}>
             <Ionicons name="shuffle" size={20} color={theme.muted} />
           </Pressable>
@@ -99,7 +101,7 @@ export default function NowPlayingScreen() {
           <Pressable accessibilityLabel="Toggle repeat" onPress={haptic.selection} style={({ pressed }) => [styles.minorControl, pressed && styles.pressed]}>
             <Ionicons name="repeat" size={20} color={theme.muted} />
           </Pressable>
-        </View>
+        </Animated.View>
 
         <View style={[styles.deviceSwitcher, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.deviceLabelRow}>
@@ -162,7 +164,6 @@ const styles = StyleSheet.create({
   topCenter: { alignItems: "center", gap: 5 },
   topLabel: { fontSize: 9, lineHeight: 11, fontWeight: "800", letterSpacing: 1.1 },
   chromeButton: { width: 42, height: 42, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
-  artFrame: { alignSelf: "center", padding: 5, borderRadius: 35, borderWidth: StyleSheet.hairlineWidth, shadowColor: "#000", shadowOpacity: 0.22, shadowRadius: 28, shadowOffset: { width: 0, height: 14 }, elevation: 8 },
   songInfo: { flexDirection: "row", alignItems: "center", gap: 10 },
   titleBlock: { flex: 1, minWidth: 0 },
   songTitle: { fontSize: 25, lineHeight: 30, letterSpacing: -0.7, fontWeight: "800" },

@@ -4,6 +4,7 @@ import { buildAudioSettingsExport, createEqPreset, createHeadphoneGroup, DEFAULT
 import { clampAdvancedAudioSettings, nativeVolumeFromTrim } from "../lib/advanced-audio-core";
 import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
 import { buildDspPlaybackConfiguration, isDspProcessingEnabled } from "../lib/dsp-player-core";
+import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/listening-field-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
@@ -106,5 +107,11 @@ describe("Sphynx playback boundaries", () => {
     });
     expect(isDspProcessingEnabled(configuration)).toBe(true);
     expect(isDspProcessingEnabled(buildDspPlaybackConfiguration(DEFAULT_AUDIO_SETTINGS))).toBe(true);
+  });
+
+  it("keeps interactive listening-field depth shallow and stable at every touch boundary", () => {
+    expect(listeningFieldTiltFromPoint(100, 100, 200, 200)).toEqual({ x: 0, y: 0 });
+    expect(listeningFieldTiltFromPoint(500, -100, 200, 200)).toEqual({ x: MAX_LISTENING_FIELD_TILT, y: MAX_LISTENING_FIELD_TILT });
+    expect(listeningFieldTiltFromPoint(Number.NaN, 40, 200, 200)).toEqual({ x: 0, y: 0 });
   });
 });
