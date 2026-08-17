@@ -2,7 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from "expo-audio";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-import { createEqPreset, createHeadphoneGroup, DEFAULT_HEADPHONE_GROUP, normalizeHeadphoneGroupName, type EqPreset, type HeadphoneGroup } from "@/lib/audio-settings-core";
+import { createEqPreset, createHeadphoneGroup, DEFAULT_AUDIO_SETTINGS, DEFAULT_HEADPHONE_GROUP, normalizeAudioSettings, normalizeHeadphoneGroupName, type AudioSettingsSnapshot, type EqPreset, type HeadphoneGroup } from "@/lib/audio-settings-core";
+import { nativeVolumeFromTrim } from "@/lib/advanced-audio-core";
 import { findMatchingHeadphoneGroup, UNKNOWN_AUDIO_ROUTE, type DetectedAudioRoute } from "@/lib/audio-route-core";
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
 import { pickLocalMusicFiles } from "@/lib/local-music";
@@ -175,15 +176,7 @@ export const libraryTracks: Track[] = [
   },
 ];
 
-export type SoundSettings = {
-  preamp: number;
-  limiter: boolean;
-  crossfade: number;
-  mono: boolean;
-  eq: [number, number, number, number, number];
-  motionReduced: boolean;
-  typeScale: "standard" | "large" | "extra";
-};
+export type SoundSettings = AudioSettingsSnapshot;
 
 type SphynxContextValue = {
   theme: ThemeDefinition;
@@ -228,15 +221,7 @@ type SphynxContextValue = {
 const STORAGE_KEY = "sphynx.preferences.v1";
 const LOCAL_LIBRARY_KEY = "sphynx.local-library.v1";
 const EQ_PRESET_STORAGE_KEY = "sphynx.eq-presets.v1";
-const defaultSound: SoundSettings = {
-  preamp: 0,
-  limiter: true,
-  crossfade: 4,
-  mono: false,
-  eq: [0, 0, 0, 0, 0],
-  motionReduced: false,
-  typeScale: "standard",
-};
+const defaultSound: SoundSettings = DEFAULT_AUDIO_SETTINGS;
 
 const SphynxContext = createContext<SphynxContextValue | null>(null);
 
@@ -278,7 +263,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
           connected?: Partial<Record<ProviderId, boolean>>;
         };
         if (parsed.themeId && themes[parsed.themeId]) setThemeIdState(parsed.themeId);
-        if (parsed.sound) setSoundState((current) => ({ ...current, ...parsed.sound }));
+        if (parsed.sound) setSoundState((current) => normalizeAudioSettings({ ...current, ...parsed.sound, eq: parsed.sound?.eq ?? current.eq }));
         if (parsed.connected) setConnectedState((current) => ({ ...current, ...parsed.connected }));
       })
       .catch(() => undefined);
@@ -383,7 +368,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
 
   const setThemeId = useCallback((nextTheme: ThemeId) => setThemeIdState(nextTheme), []);
   const setSound = useCallback((patch: Partial<SoundSettings>) => {
-    setSoundState((current) => ({ ...current, ...patch }));
+    setSoundState((current) => normalizeAudioSettings({ ...current, ...patch, eq: patch.eq ?? current.eq }));
   }, []);
   const saveEqPreset = useCallback((name: string) => {
     const now = Date.now();
@@ -392,13 +377,13 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     setActiveEqPresetId(preset.id);
   }, [activeHeadphoneGroupId, sound]);
   const applyEqPreset = useCallback((preset: EqPreset) => {
-    setSoundState(preset.settings);
+    setSoundState(normalizeAudioSettings(preset.settings));
     setActiveEqPresetId(preset.id);
   }, []);
   const overwriteActiveEqPreset = useCallback(() => {
     if (!activeEqPresetId) return;
     const now = Date.now();
-    setEqPresets((current) => current.map((preset) => preset.id === activeEqPresetId ? { ...preset, settings: { ...sound, eq: [...sound.eq] as SoundSettings["eq"] }, updatedAt: now } : preset));
+    setEqPresets((current) => current.map((preset) => preset.id === activeEqPresetId ? { ...preset, settings: normalizeAudioSettings(sound), updatedAt: now } : preset));
   }, [activeEqPresetId, sound]);
   const deleteEqPreset = useCallback((presetId: string) => {
     setEqPresets((current) => current.filter((preset) => preset.id !== presetId));
@@ -477,12 +462,24 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     nativePlayerRef.current = null;
     nativeTrackIdRef.current = null;
   }, []);
+  useEffect(() => {
+    const player = nativePlayerRef.current;
+    if (!player) return;
+    player.setPlaybackRate(sound.playbackRate, sound.pitchCorrectionQuality);
+    player.shouldCorrectPitch = sound.pitchCorrectionEnabled;
+    player.loop = sound.repeatOne;
+    player.volume = nativeVolumeFromTrim(sound.outputTrim);
+  }, [sound.outputTrim, sound.pitchCorrectionEnabled, sound.pitchCorrectionQuality, sound.playbackRate, sound.repeatOne]);
   const playLocalTrack = useCallback(async (track: Track, startPlaying = true) => {
     if (!track.localUri) return false;
     try {
       setLocalPlaybackError(null);
       stopNativePlayer();
       const player = createAudioPlayer(track.localUri, { updateInterval: 250, keepAudioSessionActive: true });
+      player.setPlaybackRate(sound.playbackRate, sound.pitchCorrectionQuality);
+      player.shouldCorrectPitch = sound.pitchCorrectionEnabled;
+      player.loop = sound.repeatOne;
+      player.volume = nativeVolumeFromTrim(sound.outputTrim);
       nativePlayerRef.current = player;
       nativeTrackIdRef.current = track.id;
       player.addListener("playbackStatusUpdate", (status) => handleNativeStatus(track.id, status));
@@ -499,7 +496,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       setLocalPlaybackError("Sphynx could not play this local file. Try MP3, AAC, M4A, or WAV.");
       return false;
     }
-  }, [handleNativeStatus, stopNativePlayer]);
+  }, [handleNativeStatus, sound.outputTrim, sound.pitchCorrectionEnabled, sound.pitchCorrectionQuality, sound.playbackRate, sound.repeatOne, stopNativePlayer]);
   const setPlaybackProgress = useCallback((nextProgress: number) => {
     const bounded = clamp(nextProgress, 0, 1);
     setProgress(bounded);

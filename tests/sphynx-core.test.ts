@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAudioSettingsExport, createEqPreset, createHeadphoneGroup, DEFAULT_HEADPHONE_GROUP, normalizeHeadphoneGroupName, normalizePresetName } from "../lib/audio-settings-core";
+import { buildAudioSettingsExport, createEqPreset, createHeadphoneGroup, DEFAULT_AUDIO_SETTINGS, DEFAULT_HEADPHONE_GROUP, normalizeAudioSettings, normalizeHeadphoneGroupName, normalizePresetName } from "../lib/audio-settings-core";
+import { clampAdvancedAudioSettings, nativeVolumeFromTrim } from "../lib/advanced-audio-core";
 import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
@@ -42,13 +43,13 @@ describe("Sphynx playback boundaries", () => {
   });
 
   it("builds a portable settings export without leaking mutable EQ references", () => {
-    const sound = { preamp: 1.5, limiter: true, crossfade: 4, mono: false, eq: [1, 0, -1, 2, 0] as [number, number, number, number, number], motionReduced: false, typeScale: "standard" as const };
+    const sound = normalizeAudioSettings({ ...DEFAULT_AUDIO_SETTINGS, preamp: 1.5, eq: [1, 0, -1, 2, 0] as [number, number, number, number, number], playbackRate: 1.25, outputTrim: -4 });
     const group = createHeadphoneGroup("device-1", "  Audeze   LCD-X  ", 1723982400000);
     const preset = createEqPreset("eq-1", "  Studio   nearfields  ", sound, 1723982400000, group.id);
     const exported = buildAudioSettingsExport(sound, [preset], new Date("2026-08-17T00:00:00.000Z"), [DEFAULT_HEADPHONE_GROUP, group], group.id);
     sound.eq[0] = 3;
     expect(preset.name).toBe("Studio nearfields");
-    expect(exported).toMatchObject({ schemaVersion: 1, app: "Sphynx", exportedAt: "2026-08-17T00:00:00.000Z", sound: { eq: [1, 0, -1, 2, 0] }, eqPresets: [{ name: "Studio nearfields", groupId: "device-1" }], headphoneGroups: [{ id: "general-audio", protected: true }, { id: "device-1", name: "Audeze LCD-X" }], activeHeadphoneGroupId: "device-1" });
+    expect(exported).toMatchObject({ schemaVersion: 2, app: "Sphynx", exportedAt: "2026-08-17T00:00:00.000Z", sound: { eq: [1, 0, -1, 2, 0], playbackRate: 1.25, outputTrim: -4 }, eqPresets: [{ name: "Studio nearfields", groupId: "device-1" }], headphoneGroups: [{ id: "general-audio", protected: true }, { id: "device-1", name: "Audeze LCD-X" }], activeHeadphoneGroupId: "device-1" });
   });
 
   it("keeps preset names compact and usable", () => {
@@ -70,5 +71,12 @@ describe("Sphynx playback boundaries", () => {
     expect(findMatchingHeadphoneGroup({ kind: "bluetooth", name: "Alice’s AirPods Pro" }, groups)?.id).toBe("device-airpods");
     expect(findMatchingHeadphoneGroup({ kind: "wired", name: "AirPods Pro" }, groups)).toBeNull();
     expect(findMatchingHeadphoneGroup({ kind: "bluetooth", name: "AirPods" }, [DEFAULT_HEADPHONE_GROUP, createHeadphoneGroup("device-one", "AirPods", 1723982400000), createHeadphoneGroup("device-two", "AirPods", 1723982400000)])).toBeNull();
+  });
+
+  it("keeps advanced transport settings inside native playback boundaries and converts trim to safe volume", () => {
+    expect(clampAdvancedAudioSettings({ playbackRate: 3, outputTrim: 4, crossfeed: -1, spatialWidth: 105 })).toMatchObject({ playbackRate: 2, outputTrim: 0, crossfeed: 0, spatialWidth: 100 });
+    expect(clampAdvancedAudioSettings({ playbackRate: 0.2, outputTrim: -20 })).toMatchObject({ playbackRate: 0.5, outputTrim: -12 });
+    expect(nativeVolumeFromTrim(0)).toBe(1);
+    expect(nativeVolumeFromTrim(-6)).toBeCloseTo(0.501, 2);
   });
 });

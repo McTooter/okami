@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { PitchCorrectionQuality } from "expo-audio";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { exportAudioSettings } from "@/lib/audio-settings-export";
+import { ENGINE_REQUIRED_CONTROLS, type LoudnessMode, type ResamplerMode } from "@/lib/advanced-audio-core";
 import { haptic } from "@/lib/haptics";
 import { useSphynx } from "@/lib/sphynx-store";
 
@@ -197,6 +199,43 @@ export default function SoundLabScreen() {
           <Stepper label="Crossfade" value={String(sound.crossfade)} unit=" s" onDecrease={() => { haptic.selection(); setSound({ crossfade: Math.max(0, sound.crossfade - 1) }); }} onIncrease={() => { haptic.selection(); setSound({ crossfade: Math.min(12, sound.crossfade + 1) }); }} />
         </View>
 
+        <View style={[styles.engineCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={styles.rackHeading}>
+            <View><Text style={[styles.rackTitle, { color: theme.foreground }]}>Local playback</Text><Text style={[styles.rackNote, { color: theme.muted }]}>These controls are applied to imported files by the current audio engine.</Text></View>
+            <Ionicons name="speedometer-outline" size={20} color={theme.accent} />
+          </View>
+          <View style={styles.toolsGroup}>
+            <Stepper label="Tempo" value={sound.playbackRate.toFixed(2)} unit="×" onDecrease={() => { haptic.selection(); setSound({ playbackRate: Math.max(0.5, Number((sound.playbackRate - 0.05).toFixed(2))) }); }} onIncrease={() => { haptic.selection(); setSound({ playbackRate: Math.min(2, Number((sound.playbackRate + 0.05).toFixed(2))) }); }} />
+            <Stepper label="Output trim" value={sound.outputTrim.toFixed(1)} unit=" dB" onDecrease={() => { haptic.selection(); setSound({ outputTrim: Math.max(-12, Number((sound.outputTrim - 0.5).toFixed(1))) }); }} onIncrease={() => { haptic.selection(); setSound({ outputTrim: Math.min(0, Number((sound.outputTrim + 0.5).toFixed(1))) }); }} />
+          </View>
+          <View style={styles.switchRow}>
+            <Pressable accessibilityLabel="Toggle pitch correction" onPress={() => { haptic.selection(); setSound({ pitchCorrectionEnabled: !sound.pitchCorrectionEnabled }); }} style={({ pressed }) => [styles.smallToggle, { backgroundColor: sound.pitchCorrectionEnabled ? theme.accent : theme.raised, borderColor: sound.pitchCorrectionEnabled ? theme.accent : theme.border }, pressed && styles.pressed]}><Text style={[styles.smallToggleText, { color: sound.pitchCorrectionEnabled ? theme.accentInk : theme.foreground }]}>Pitch lock</Text></Pressable>
+            <Pressable accessibilityLabel="Toggle repeat one" onPress={() => { haptic.selection(); setSound({ repeatOne: !sound.repeatOne }); }} style={({ pressed }) => [styles.smallToggle, { backgroundColor: sound.repeatOne ? theme.accent : theme.raised, borderColor: sound.repeatOne ? theme.accent : theme.border }, pressed && styles.pressed]}><Text style={[styles.smallToggleText, { color: sound.repeatOne ? theme.accentInk : theme.foreground }]}>Repeat one</Text></Pressable>
+          </View>
+          <Text style={[styles.choiceLabel, { color: theme.muted }]}>Pitch correction quality</Text>
+          <View style={styles.choiceRow}>{(["low", "medium", "high"] as PitchCorrectionQuality[]).map((quality) => <Pressable key={quality} onPress={() => { haptic.selection(); setSound({ pitchCorrectionQuality: quality }); }} style={({ pressed }) => [styles.choiceChip, { borderColor: sound.pitchCorrectionQuality === quality ? theme.accent : theme.border, backgroundColor: sound.pitchCorrectionQuality === quality ? theme.accent : theme.raised }, pressed && styles.pressed]}><Text style={[styles.choiceText, { color: sound.pitchCorrectionQuality === quality ? theme.accentInk : theme.foreground }]}>{quality}</Text></Pressable>)}</View>
+        </View>
+
+        <View style={[styles.engineCard, { backgroundColor: theme.raised, borderColor: theme.border }]}>
+          <View style={styles.rackHeading}>
+            <View><Text style={[styles.rackTitle, { color: theme.foreground }]}>Reference DSP shelf</Text><Text style={[styles.rackNote, { color: theme.muted }]}>Profiles remember these choices; waveform processing awaits Sphynx’s dedicated native DSP engine.</Text></View>
+            <Ionicons name="hardware-chip-outline" size={20} color={theme.accent} />
+          </View>
+          <View style={styles.toolsGroup}>
+            <Stepper label="Crossfeed" value={String(sound.crossfeed)} unit="%" onDecrease={() => { haptic.selection(); setSound({ crossfeed: Math.max(0, sound.crossfeed - 5) }); }} onIncrease={() => { haptic.selection(); setSound({ crossfeed: Math.min(100, sound.crossfeed + 5) }); }} />
+            <Stepper label="Spatial width" value={String(sound.spatialWidth)} unit="%" onDecrease={() => { haptic.selection(); setSound({ spatialWidth: Math.max(0, sound.spatialWidth - 5) }); }} onIncrease={() => { haptic.selection(); setSound({ spatialWidth: Math.min(100, sound.spatialWidth + 5) }); }} />
+          </View>
+          <Text style={[styles.choiceLabel, { color: theme.muted }]}>Loudness reference</Text>
+          <View style={styles.choiceRow}>{(["off", "track", "album"] as LoudnessMode[]).map((mode) => <Pressable key={mode} onPress={() => { haptic.selection(); setSound({ loudnessMode: mode }); }} style={({ pressed }) => [styles.choiceChip, { borderColor: sound.loudnessMode === mode ? theme.accent : theme.border, backgroundColor: sound.loudnessMode === mode ? theme.accent : theme.surface }, pressed && styles.pressed]}><Text style={[styles.choiceText, { color: sound.loudnessMode === mode ? theme.accentInk : theme.foreground }]}>{mode}</Text></Pressable>)}</View>
+          <View style={styles.switchRow}>
+            <Pressable accessibilityLabel="Toggle compressor request" onPress={() => { haptic.selection(); setSound({ compressor: !sound.compressor }); }} style={({ pressed }) => [styles.smallToggle, { backgroundColor: sound.compressor ? theme.accent : theme.surface, borderColor: sound.compressor ? theme.accent : theme.border }, pressed && styles.pressed]}><Text style={[styles.smallToggleText, { color: sound.compressor ? theme.accentInk : theme.foreground }]}>Compressor</Text></Pressable>
+            <Pressable accessibilityLabel="Toggle phase inversion request" onPress={() => { haptic.selection(); setSound({ phaseInverted: !sound.phaseInverted }); }} style={({ pressed }) => [styles.smallToggle, { backgroundColor: sound.phaseInverted ? theme.accent : theme.surface, borderColor: sound.phaseInverted ? theme.accent : theme.border }, pressed && styles.pressed]}><Text style={[styles.smallToggleText, { color: sound.phaseInverted ? theme.accentInk : theme.foreground }]}>Invert phase</Text></Pressable>
+          </View>
+          <Text style={[styles.choiceLabel, { color: theme.muted }]}>Resampler target</Text>
+          <View style={styles.choiceRow}>{(["system", "high"] as ResamplerMode[]).map((mode) => <Pressable key={mode} onPress={() => { haptic.selection(); setSound({ resampler: mode }); }} style={({ pressed }) => [styles.choiceChip, { borderColor: sound.resampler === mode ? theme.accent : theme.border, backgroundColor: sound.resampler === mode ? theme.accent : theme.surface }, pressed && styles.pressed]}><Text style={[styles.choiceText, { color: sound.resampler === mode ? theme.accentInk : theme.foreground }]}>{mode === "high" ? "High quality" : "System"}</Text></Pressable>)}</View>
+          <View style={styles.engineTags}>{ENGINE_REQUIRED_CONTROLS.map((feature) => <View key={feature} style={[styles.engineTag, { borderColor: theme.border }]}><Text style={[styles.engineTagText, { color: theme.muted }]}>{feature}</Text></View>)}</View>
+        </View>
+
         <View style={[styles.safety, { backgroundColor: sound.preamp > 3 ? "#4A211F" : theme.raised, borderColor: sound.preamp > 3 ? theme.danger : theme.border }]}>
           <Ionicons name={sound.preamp > 3 ? "warning-outline" : "shield-checkmark-outline"} size={20} color={sound.preamp > 3 ? theme.danger : theme.accent} />
           <View style={styles.safetyCopy}>
@@ -275,6 +314,17 @@ const styles = StyleSheet.create({
   overwriteButton: { minHeight: 34, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 10, marginTop: 11, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 },
   overwriteText: { fontSize: 10, fontWeight: "800" },
   toolsGroup: { gap: 9 },
+  engineCard: { borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginTop: 15 },
+  switchRow: { flexDirection: "row", gap: 8, marginTop: 13 },
+  smallToggle: { flex: 1, minHeight: 36, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
+  smallToggleText: { fontSize: 10, fontWeight: "800" },
+  choiceLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 0.55, marginTop: 15, marginBottom: 7, textTransform: "uppercase" },
+  choiceRow: { flexDirection: "row", gap: 7 },
+  choiceChip: { flex: 1, minHeight: 34, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center", paddingHorizontal: 5 },
+  choiceText: { fontSize: 10, fontWeight: "800", textTransform: "capitalize" },
+  engineTags: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 15 },
+  engineTag: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5 },
+  engineTagText: { fontSize: 9, fontWeight: "700" },
   stepper: { minHeight: 64, borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 13 },
   stepperLabel: { fontSize: 13, fontWeight: "700" },
   stepperRight: { flexDirection: "row", alignItems: "center", gap: 8 },

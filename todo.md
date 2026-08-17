@@ -24,3 +24,6 @@
 - [x] Add supported iOS audio-route observation without Bluetooth scanning or permission prompts, plus a safe unsupported-platform fallback.
 - [x] Match detected audio-device names to saved headphone groups and auto-select only a clear, non-general match.
 - [x] Expose detected-device status in Now Playing and validate no playback or queue interruption during auto-selection.
+- [x] Research Neutron Music Player’s publicly documented audio capabilities and separate feasible controls from native DSP requirements.
+- [x] Add original Sphynx advanced-audio controls, including expanded EQ architecture, playback gain behavior, spatial and timing preferences, and device-scoped state.
+- [x] Add advanced-audio presets, export compatibility, and deterministic validation for feasible controls.
