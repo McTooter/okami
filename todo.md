@@ -45,3 +45,10 @@
 - [x] Add a dedicated Theme Studio tab that changes the wider app material system, beginning with original Noir Pulse and Sunlit Signal directions.
 - [x] Tune the 3D Listening Field’s shader and motion materials per theme, with reduced-motion safeguards.
 - [x] Validate transitions, queue ordering, theme states, accessibility, TypeScript, linting, and deterministic tests.
+- [x] Specify original red-comic and warm-broadcast material refinements without reproducing third-party interface assets.
+- [x] Implement distinct global layout, typography, panel, and motion treatments for both material modes.
+- [x] Validate material-specific animations, reduced-motion behavior, TypeScript, linting, and deterministic tests.
+- [x] Research high-level kinetic interface patterns from the requested references and visual boards without reproducing protected UI assets.
+- [x] Define a non-static Sphynx motion system for press feedback, active states, section choreography, and material modes.
+- [x] Replace static primary controls and material surfaces with responsive animated interaction states.
+- [x] Validate animated controls, motion-reduction behavior, performance safeguards, TypeScript, linting, and deterministic tests.

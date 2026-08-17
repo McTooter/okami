@@ -95,3 +95,27 @@ The new **Theme Studio** is a fifth tab. It changes an independent **app materia
 | **Sunlit Signal** | Warm paper, amber light, muted indigo metadata, and a broadcast-card edge. | Softens sheet framing, secondary labels, route chips, and the Listening Field bloom. | A 220 ms card reveal; ambient drift stays below 4 pixels. |
 
 > These are original Sphynx materials. They deliberately avoid protected game names, characters, typefaces, screen layouts, music, or artwork.
+
+## Original kinetic material refinements
+
+The material system now applies to navigation and editorial surfaces as well as playback. **Noir Pulse** uses vermilion cue marks, offset cutout panels, compact uppercase metadata, and a short lateral snap for priority actions. **Sunlit Signal** uses amber channel markers, indigo echo bars, open panel corners, and a gentle upward drift for section entry. These modes are authored as Sphynx visual directions: they are not reproductions of any third-party game interface.
+
+| Material | Application chrome | Entry behavior | Reduced-motion alternative |
+|---|---|---|---|
+| **Noir Pulse** | Squared tab framing, cutout editorial panels, and a high-contrast cue rail. | A 220–300 ms lateral settle for active sections and selection changes. | A 120 ms opacity transition with no lateral transform. |
+| **Sunlit Signal** | Softer broadcast-card edges, amber channel stamps, and indigo signal echoes. | A 260–340 ms upward settle with a short opacity dissolve. | A 150 ms opacity transition with no vertical transform. |
+
+Both materials retain existing contrast, touch-target, queue, and playback rules. The visual variant changes the application’s material and motion character; it never changes a user’s music access, provider entitlement, or DSP configuration.
+
+## Dynamic interface requirement
+
+Sphynx primary controls are not static. Each press has a clear down state, a short settled state, and an active-state distinction. Motion must clarify control ownership and result; it must not delay playback, cover content, or simulate physical interaction where none exists.
+
+| Surface | Direct interaction | Persistent or active motion | Material variation |
+|---|---|---|---|
+| **Primary button / transport** | 92 ms depth compression, cue-color lift, and light haptic feedback. | Play and pause crossfade their symbols; active controls retain a cue rail. | Noir Pulse resolves laterally; Sunlit Signal resolves upward. |
+| **Cards and rows** | 96 ms opacity and 0.985-scale response. | A selected row receives a short material-colored edge sweep. | Noir uses a cutout edge; Sunlit uses a soft channel stamp. |
+| **Tabs and filters** | 110 ms icon/text scale response with a moving active indicator. | The active destination has an animated cue marker, not a static tint alone. | Noir uses a sharp marker; Sunlit uses a rounded broadcast marker. |
+| **Panels and sheets** | Controls lift independently; the panel itself does not bounce. | Sections enter once, then remain still until user input or playback state changes. | Noir enters from the side; Sunlit enters from below. |
+
+Reduced Motion preserves all state changes through 100–150 ms opacity and color transitions, while removing transforms, continuous drift, and indicator travel.

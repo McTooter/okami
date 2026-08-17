@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View, type View as ViewType } from "react-native";
+import { StyleSheet, Text, View, type View as ViewType } from "react-native";
 import { useRef } from "react";
 
 import { AlbumArt } from "@/components/sphynx/album-art";
+import { MotionPressable } from "@/components/sphynx/motion-pressable";
 import { haptic } from "@/lib/haptics";
 import { type Track, useSphynx } from "@/lib/sphynx-store";
 import { useArtworkTransition } from "./artwork-transition";
@@ -35,7 +36,7 @@ export function TrackRow({ track, index, onMore }: { track: Track; index?: numbe
           {active ? "▮▮" : String(index + 1).padStart(2, "0")}
         </Text>
       ) : null}
-      <Pressable onPress={play} style={({ pressed }) => [styles.trackMain, pressed && styles.pressed]}>
+      <MotionPressable onPress={play} style={styles.trackMain}>
         <AlbumArt artwork={track.artwork} size={50} radius={12} />
         <View style={styles.trackCopy}>
           <Text numberOfLines={1} style={[styles.trackTitle, { color: theme.foreground }]}>
@@ -45,17 +46,18 @@ export function TrackRow({ track, index, onMore }: { track: Track; index?: numbe
             {track.artist} · {track.album}
           </Text>
         </View>
-      </Pressable>
+      </MotionPressable>
       <View style={styles.trackRight}>
         <Text style={[styles.duration, { color: theme.muted }]}>{track.duration}</Text>
-        <Pressable
+        <MotionPressable
           accessibilityLabel={`More options for ${track.title}`}
           onPress={onMore ?? (() => haptic.selection())}
           hitSlop={10}
-          style={({ pressed }) => [styles.moreButton, pressed && styles.pressed]}
+          emphasis="compact"
+          style={styles.moreButton}
         >
           <Ionicons name="ellipsis-horizontal" size={19} color={theme.muted} />
-        </Pressable>
+        </MotionPressable>
       </View>
     </View>
   );
@@ -81,10 +83,10 @@ export function MiniPlayer() {
       <View style={[styles.progressTrack, { backgroundColor: theme.border }]}>
         <View style={[styles.progressFill, { backgroundColor: currentTrack.accent, width: `${Math.max(2, progress * 100)}%` }]} />
       </View>
-      <Pressable
+      <MotionPressable
         accessibilityLabel="Open now playing"
         onPress={openPlayer}
-        style={({ pressed }) => [styles.miniTapArea, pressed && styles.pressed]}
+        style={styles.miniTapArea}
       >
         <View ref={artworkRef} collapsable={false}><AlbumArt artwork={currentTrack.artwork} size={42} radius={11} /></View>
         <View style={styles.miniCopy}>
@@ -95,18 +97,19 @@ export function MiniPlayer() {
             {currentTrack.artist}
           </Text>
         </View>
-      </Pressable>
-      <Pressable
+      </MotionPressable>
+      <MotionPressable
         accessibilityLabel={isPlaying ? "Pause" : "Play"}
         onPress={() => {
           haptic.light();
           togglePlayback();
         }}
         hitSlop={8}
-        style={({ pressed }) => [styles.miniTransport, pressed && styles.pressed]}
+        emphasis="primary"
+        style={styles.miniTransport}
       >
         <Ionicons name={isPlaying ? "pause" : "play"} size={21} color={theme.foreground} />
-      </Pressable>
+      </MotionPressable>
     </View>
   );
 }
@@ -130,9 +133,9 @@ export function SectionHeading({
         <Text style={[styles.sectionTitle, { color: theme.foreground }]}>{title}</Text>
       </View>
       {action ? (
-        <Pressable onPress={onAction} style={({ pressed }) => [styles.sectionAction, pressed && styles.pressed]}>
+        <MotionPressable onPress={onAction} emphasis="compact" style={styles.sectionAction}>
           <Text style={[styles.sectionActionText, { color: theme.accent }]}>{action}</Text>
-        </Pressable>
+        </MotionPressable>
       ) : null}
     </View>
   );
@@ -176,5 +179,4 @@ const styles = StyleSheet.create({
   metric: { gap: 2 },
   metricValue: { fontSize: 18, lineHeight: 22, fontWeight: "800", letterSpacing: -0.3, fontVariant: ["tabular-nums"] },
   metricLabel: { fontSize: 10, lineHeight: 13, textTransform: "uppercase", letterSpacing: 0.75, fontWeight: "700" },
-  pressed: { opacity: 0.66, transform: [{ scale: 0.98 }] },
 });

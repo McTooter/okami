@@ -52,6 +52,8 @@ export type AppMaterial = {
   id: AppMaterialId;
   name: string;
   note: string;
+  chrome: "neutral" | "cutout" | "broadcast";
+  entry: "soft" | "snap" | "drift";
   cue?: string;
   cueInk?: string;
   fieldAccent?: string;
@@ -63,9 +65,9 @@ export type AppMaterial = {
 };
 
 export const appMaterials: Record<AppMaterialId, AppMaterial> = {
-  core: { id: "core", name: "Studio Core", note: "Track-led mineral material", shaderMode: 0, shaderEnergy: 0.72, signalOpacity: 1, fieldRadius: 36 },
-  "noir-pulse": { id: "noir-pulse", name: "Noir Pulse", note: "Vermilion cueing with crisp orbital detail", cue: "#F05A47", cueInk: "#170504", fieldAccent: "#F05A47", fieldSecondary: "#F6EDE7", shaderMode: 1, shaderEnergy: 1.12, signalOpacity: 1.18, fieldRadius: 25 },
-  "sunlit-signal": { id: "sunlit-signal", name: "Sunlit Signal", note: "Warm broadcast light with softened indigo detail", cue: "#E7A628", cueInk: "#251B00", fieldAccent: "#E7A628", fieldSecondary: "#6874B8", shaderMode: 2, shaderEnergy: 0.82, signalOpacity: 0.78, fieldRadius: 42 },
+  core: { id: "core", name: "Studio Core", note: "Track-led mineral material", chrome: "neutral", entry: "soft", shaderMode: 0, shaderEnergy: 0.72, signalOpacity: 1, fieldRadius: 36 },
+  "noir-pulse": { id: "noir-pulse", name: "Noir Pulse", note: "Vermilion cueing with decisive cutout panels", chrome: "cutout", entry: "snap", cue: "#F05A47", cueInk: "#170504", fieldAccent: "#F05A47", fieldSecondary: "#F6EDE7", shaderMode: 1, shaderEnergy: 1.12, signalOpacity: 1.18, fieldRadius: 10 },
+  "sunlit-signal": { id: "sunlit-signal", name: "Sunlit Signal", note: "Warm broadcast light with softened indigo detail", chrome: "broadcast", entry: "drift", cue: "#E7A628", cueInk: "#251B00", fieldAccent: "#E7A628", fieldSecondary: "#6874B8", shaderMode: 2, shaderEnergy: 0.82, signalOpacity: 0.78, fieldRadius: 32 },
 };
 
 export const themes: Record<ThemeId, ThemeDefinition> = {

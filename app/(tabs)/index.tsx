@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, FadeInDown, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { AlbumArt } from "@/components/sphynx/album-art";
 import { Metric, MiniPlayer, SectionHeading, SourceBadge, TrackRow } from "@/components/sphynx/controls";
 import { PlaybackPulse } from "@/components/sphynx/listening-field";
+import { MotionPressable } from "@/components/sphynx/motion-pressable";
 import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
 import { type Track, useSphynx } from "@/lib/sphynx-store";
@@ -56,53 +57,51 @@ export default function LibraryScreen() {
                 <Text style={[styles.kicker, { color: theme.accent }]}>SPHYNX / LIBRARY</Text>
                 <Text style={[styles.pageTitle, { color: theme.foreground }]}>Your music.</Text>
               </View>
-              <Pressable
-                accessibilityLabel="Open search"
-                onPress={() => router.navigate("/search" as never)}
-                style={({ pressed }) => [styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}
-              >
+              <MotionPressable accessibilityLabel="Open search" onPress={() => router.navigate("/search" as never)} emphasis="compact" style={[styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <Ionicons name="search" size={20} color={theme.foreground} />
-              </Pressable>
+              </MotionPressable>
             </Animated.View>
 
             <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(90).duration(360).easing(Easing.out(Easing.cubic))}>
-            <Pressable onPress={openNowPlaying} style={({ pressed }) => [styles.nowCard, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}>
-              <View style={styles.nowCardTop}>
-                <View style={styles.nowStatus}><PlaybackPulse active={isPlaying} color={theme.accent} motionReduced={motionReduced} /><Text style={[styles.nowLabel, { color: theme.muted }]}>{isPlaying ? "PLAYING NOW" : "READY IN THE DECK"}</Text></View>
-                <SourceBadge provider={currentTrack.provider} />
-              </View>
-              <View style={styles.nowContent}>
-                <AlbumArt artwork={currentTrack.artwork} size={92} radius={20} />
-                <View style={styles.nowCopy}>
-                  <Text numberOfLines={2} style={[styles.nowTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
-                  <Text numberOfLines={1} style={[styles.nowArtist, { color: theme.muted }]}>{currentTrack.artist}</Text>
-                  <View style={styles.nowActionRow}>
-                    <View style={[styles.playPill, { backgroundColor: currentTrack.accent }]}>
-                      <Ionicons name={isPlaying ? "pause" : "play"} size={15} color={theme.accentInk} />
-                      <Text style={[styles.playPillText, { color: theme.accentInk }]}>{isPlaying ? "Resume" : "Play"}</Text>
+              <MotionPressable onPress={openNowPlaying} emphasis="primary" style={[styles.nowCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <View style={styles.nowCardTop}>
+                  <View style={styles.nowStatus}><PlaybackPulse active={isPlaying} color={theme.accent} motionReduced={motionReduced} /><Text style={[styles.nowLabel, { color: theme.muted }]}>{isPlaying ? "PLAYING NOW" : "READY IN THE DECK"}</Text></View>
+                  <SourceBadge provider={currentTrack.provider} />
+                </View>
+                <View style={styles.nowContent}>
+                  <AlbumArt artwork={currentTrack.artwork} size={92} radius={20} />
+                  <View style={styles.nowCopy}>
+                    <Text numberOfLines={2} style={[styles.nowTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
+                    <Text numberOfLines={1} style={[styles.nowArtist, { color: theme.muted }]}>{currentTrack.artist}</Text>
+                    <View style={styles.nowActionRow}>
+                      <View style={[styles.playPill, { backgroundColor: currentTrack.accent }]}>
+                        <Ionicons name={isPlaying ? "pause" : "play"} size={15} color={theme.accentInk} />
+                        <Text style={[styles.playPillText, { color: theme.accentInk }]}>{isPlaying ? "Resume" : "Play"}</Text>
+                      </View>
+                      <Text style={[styles.actionHint, { color: theme.muted }]}>Open player</Text>
                     </View>
-                    <Text style={[styles.actionHint, { color: theme.muted }]}>Open player</Text>
                   </View>
                 </View>
-              </View>
-            </Pressable>
+              </MotionPressable>
             </Animated.View>
 
-            <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(145).duration(330).easing(Easing.out(Easing.cubic))}><Pressable
-              accessibilityLabel="Import music files from this device"
-              disabled={isImporting}
-              onPress={() => { haptic.medium(); void importLocalTracks(); }}
-              style={({ pressed }) => [styles.importCard, { backgroundColor: theme.raised, borderColor: theme.border }, pressed && !isImporting && styles.pressed, isImporting && styles.disabled]}
-            >
-              <View style={[styles.importIcon, { backgroundColor: theme.accent }]}>
-                <Ionicons name="folder-open-outline" size={19} color={theme.accentInk} />
-              </View>
-              <View style={styles.importCopy}>
-                <Text style={[styles.importTitle, { color: theme.foreground }]}>{isImporting ? "Opening Files…" : "Import music files"}</Text>
-                <Text style={[styles.importText, { color: theme.muted }]}>{localImportMessage ?? `${importedTracks.length} local ${importedTracks.length === 1 ? "track" : "tracks"} stored on this iPhone`}</Text>
-              </View>
-              <Ionicons name="add" size={22} color={theme.accent} />
-            </Pressable>
+            <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(145).duration(330).easing(Easing.out(Easing.cubic))}>
+              <MotionPressable
+                accessibilityLabel="Import music files from this device"
+                disabled={isImporting}
+                onPress={() => { haptic.medium(); void importLocalTracks(); }}
+                emphasis="primary"
+                style={[styles.importCard, { backgroundColor: theme.raised, borderColor: theme.border }, isImporting && styles.disabled]}
+              >
+                <View style={[styles.importIcon, { backgroundColor: theme.accent }]}>
+                  <Ionicons name="folder-open-outline" size={19} color={theme.accentInk} />
+                </View>
+                <View style={styles.importCopy}>
+                  <Text style={[styles.importTitle, { color: theme.foreground }]}>{isImporting ? "Opening Files…" : "Import music files"}</Text>
+                  <Text style={[styles.importText, { color: theme.muted }]}>{localImportMessage ?? `${importedTracks.length} local ${importedTracks.length === 1 ? "track" : "tracks"} stored on this iPhone`}</Text>
+                </View>
+                <Ionicons name="add" size={22} color={theme.accent} />
+              </MotionPressable>
             </Animated.View>
 
             <View style={[styles.metricBand, { borderColor: theme.border }]}>
@@ -146,6 +145,5 @@ const styles = StyleSheet.create({
   playPillText: { fontSize: 12, fontWeight: "800" },
   actionHint: { fontSize: 11, fontWeight: "600" },
   metricBand: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 13, marginBottom: 26 },
-  pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.55 },
 });

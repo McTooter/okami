@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, Pressable, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { MiniPlayer } from "@/components/sphynx/controls";
+import { MotionPressable } from "@/components/sphynx/motion-pressable";
 import { ScreenContainer } from "@/components/screen-container";
 import { appMaterials, type AppMaterialId, useSphynx } from "@/lib/sphynx-store";
 
@@ -47,11 +48,12 @@ export default function ThemesTab() {
             const cue = item.cue ?? theme.accent;
             return (
               <Animated.View key={id} entering={motionReduced ? undefined : FadeInDown.delay(90 + index * 55).duration(230)}>
-                <Pressable
+                <MotionPressable
                   accessibilityLabel={`${item.name}. ${item.note}. ${selected ? "Selected" : "Select material"}`}
                   accessibilityState={{ selected }}
                   onPress={() => setMaterialId(id)}
-                  style={({ pressed }) => [styles.materialCard, { backgroundColor: selected ? theme.raised : theme.surface, borderColor: selected ? cue : theme.border }, pressed && styles.pressed]}
+                  emphasis="primary"
+                  style={[styles.materialCard, { backgroundColor: selected ? theme.raised : theme.surface, borderColor: selected ? cue : theme.border }]}
                 >
                   <View style={[styles.swatch, { backgroundColor: cue }]}>
                     <View style={[styles.swatchCut, { borderColor: item.fieldSecondary ?? theme.foreground }]} />
@@ -63,7 +65,7 @@ export default function ThemesTab() {
                     </View>
                     <Text style={[styles.cardNote, { color: theme.muted }]}>{item.note}</Text>
                   </View>
-                </Pressable>
+                </MotionPressable>
               </Animated.View>
             );
           })}
@@ -107,5 +109,4 @@ const styles = StyleSheet.create({
   cardNote: { fontSize: 11, lineHeight: 15, fontWeight: "500" },
   note: { flexDirection: "row", gap: 9, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 12 },
   noteText: { flex: 1, fontSize: 11, lineHeight: 16 },
-  pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
 });

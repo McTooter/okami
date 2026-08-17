@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
-import { GestureResponderEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { GestureResponderEvent, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
 import { useArtworkTransition } from "@/components/sphynx/artwork-transition";
 import { ListeningField } from "@/components/sphynx/listening-field";
 import { SourceBadge } from "@/components/sphynx/controls";
+import { MotionPressable } from "@/components/sphynx/motion-pressable";
 import { QueueSheet } from "@/components/sphynx/queue-sheet";
 import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
@@ -22,12 +23,12 @@ function ProgressRail() {
   };
   return (
     <View>
-      <Pressable onLayout={(event) => setRailWidth(event.nativeEvent.layout.width)} onPress={selectPosition} style={({ pressed }) => [styles.progressHit, pressed && styles.pressed]}>
+      <MotionPressable onLayout={(event) => setRailWidth(event.nativeEvent.layout.width)} onPress={selectPosition} emphasis="compact" style={styles.progressHit}>
         <View style={[styles.progressRail, { backgroundColor: theme.border }]}>
           <View style={[styles.progressFill, { backgroundColor: theme.accent, width: `${progress * 100}%` }]} />
           <View style={[styles.progressThumb, { backgroundColor: theme.foreground, left: `${Math.max(0, progress * 100 - 1.7)}%` }]} />
         </View>
-      </Pressable>
+      </MotionPressable>
       <View style={styles.timeRow}>
         <Text style={[styles.time, { color: theme.muted }]}>{formatTime(playbackDuration > 0 ? playbackSeconds : durationSeconds(currentTrack.duration) * progress)}</Text>
         <Text style={[styles.time, { color: theme.muted }]}>{playbackDuration > 0 ? formatTime(playbackDuration) : currentTrack.duration}</Text>
@@ -61,16 +62,16 @@ export default function NowPlayingScreen() {
       <Stack.Screen options={{ presentation: "fullScreenModal", animation: "fade" }} />
       <View style={styles.page}>
         <Animated.View entering={motionReduced ? undefined : FadeIn.duration(260)} style={styles.topBar}>
-          <Pressable accessibilityLabel="Close player" onPress={() => router.back()} style={({ pressed }) => [styles.chromeButton, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}>
+          <MotionPressable accessibilityLabel="Close player" onPress={() => router.back()} emphasis="compact" style={[styles.chromeButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Ionicons name="chevron-down" size={22} color={theme.foreground} />
-          </Pressable>
+          </MotionPressable>
           <View style={styles.topCenter}>
             <Text style={[styles.topLabel, { color: theme.muted }]}>NOW PLAYING FROM</Text>
             <SourceBadge provider={currentTrack.provider} />
           </View>
-          <Pressable accessibilityLabel="Open more player options" onPress={haptic.selection} style={({ pressed }) => [styles.chromeButton, { backgroundColor: theme.surface, borderColor: theme.border }, pressed && styles.pressed]}>
+          <MotionPressable accessibilityLabel="Open more player options" onPress={haptic.selection} emphasis="compact" style={[styles.chromeButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Ionicons name="ellipsis-horizontal" size={20} color={theme.foreground} />
-          </Pressable>
+          </MotionPressable>
         </Animated.View>
 
         <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(70).duration(420)}>
@@ -82,29 +83,29 @@ export default function NowPlayingScreen() {
             <Text numberOfLines={2} style={[styles.songTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
             <Text numberOfLines={1} style={[styles.songArtist, { color: theme.muted }]}>{currentTrack.artist} · {currentTrack.album}</Text>
           </View>
-          <Pressable accessibilityLabel="Save track" onPress={haptic.selection} style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}>
+          <MotionPressable accessibilityLabel="Save track" onPress={haptic.selection} emphasis="compact" style={styles.saveButton}>
             <Ionicons name="add-circle-outline" size={28} color={theme.accent} />
-          </Pressable>
+          </MotionPressable>
         </Animated.View>
 
         <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(180).duration(320)}><ProgressRail /></Animated.View>
 
         <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(210).duration(300)} style={styles.transportRow}>
-          <Pressable accessibilityLabel="Toggle shuffle" onPress={haptic.selection} style={({ pressed }) => [styles.minorControl, pressed && styles.pressed]}>
+          <MotionPressable accessibilityLabel="Toggle shuffle" onPress={haptic.selection} emphasis="compact" style={styles.minorControl}>
             <Ionicons name="shuffle" size={20} color={theme.muted} />
-          </Pressable>
-          <Pressable accessibilityLabel="Previous track" onPress={() => { haptic.light(); skip("previous"); }} style={({ pressed }) => [styles.majorControl, pressed && styles.pressed]}>
+          </MotionPressable>
+          <MotionPressable accessibilityLabel="Previous track" onPress={() => { haptic.light(); skip("previous"); }} emphasis="primary" style={styles.majorControl}>
             <Ionicons name="play-skip-back" size={30} color={theme.foreground} />
-          </Pressable>
-          <Pressable accessibilityLabel={isPlaying ? "Pause" : "Play"} onPress={() => { haptic.medium(); togglePlayback(); }} style={({ pressed }) => [styles.playControl, { backgroundColor: theme.accent }, pressed && styles.pressed]}>
+          </MotionPressable>
+          <MotionPressable accessibilityLabel={isPlaying ? "Pause" : "Play"} onPress={() => { haptic.medium(); togglePlayback(); }} emphasis="primary" style={[styles.playControl, { backgroundColor: theme.accent }]}>
             <Ionicons name={isPlaying ? "pause" : "play"} size={31} color={theme.accentInk} style={{ marginLeft: isPlaying ? 0 : 3 }} />
-          </Pressable>
-          <Pressable accessibilityLabel="Next track" onPress={() => { haptic.light(); skip("next"); }} style={({ pressed }) => [styles.majorControl, pressed && styles.pressed]}>
+          </MotionPressable>
+          <MotionPressable accessibilityLabel="Next track" onPress={() => { haptic.light(); skip("next"); }} emphasis="primary" style={styles.majorControl}>
             <Ionicons name="play-skip-forward" size={30} color={theme.foreground} />
-          </Pressable>
-          <Pressable accessibilityLabel="Toggle repeat" onPress={haptic.selection} style={({ pressed }) => [styles.minorControl, pressed && styles.pressed]}>
+          </MotionPressable>
+          <MotionPressable accessibilityLabel="Toggle repeat" onPress={haptic.selection} emphasis="compact" style={styles.minorControl}>
             <Ionicons name="repeat" size={20} color={theme.muted} />
-          </Pressable>
+          </MotionPressable>
         </Animated.View>
 
         <View style={[styles.deviceSwitcher, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -125,30 +126,31 @@ export default function NowPlayingScreen() {
             {headphoneGroups.map((group) => {
               const selected = group.id === activeHeadphoneGroupId;
               return (
-                <Pressable
+                <MotionPressable
                   key={group.id}
                   accessibilityLabel={`Switch listening device to ${group.name}`}
                   onPress={() => { haptic.selection(); setActiveHeadphoneGroupId(group.id); }}
-                  style={({ pressed }) => [styles.deviceChip, { borderColor: selected ? theme.accent : theme.border, backgroundColor: selected ? theme.accent : theme.raised }, pressed && styles.pressed]}
+                  emphasis="compact"
+                  style={[styles.deviceChip, { borderColor: selected ? theme.accent : theme.border, backgroundColor: selected ? theme.accent : theme.raised }]}
                 >
                   {selected ? <Ionicons name="checkmark" size={12} color={theme.accentInk} /> : null}
                   <Text numberOfLines={1} style={[styles.deviceChipText, { color: selected ? theme.accentInk : theme.foreground }]}>{group.name}</Text>
-                </Pressable>
+                </MotionPressable>
               );
             })}
           </ScrollView>
         </View>
 
         <View style={[styles.toolLine, { borderTopColor: theme.border }]}>
-          <Pressable onPress={() => router.push("/sound-lab" as never)} style={({ pressed }) => [styles.toolItem, pressed && styles.pressed]}>
+          <MotionPressable onPress={() => router.push("/sound-lab" as never)} style={styles.toolItem}>
             <Ionicons name="options-outline" size={18} color={theme.accent} />
             <Text style={[styles.toolText, { color: theme.foreground }]}>Sound Lab</Text>
-          </Pressable>
+          </MotionPressable>
           <View style={[styles.toolDivider, { backgroundColor: theme.border }]} />
-          <Pressable accessibilityLabel="Open queue" onPress={() => { haptic.selection(); setQueueVisible(true); }} style={({ pressed }) => [styles.toolItem, pressed && styles.pressed]}>
+          <MotionPressable accessibilityLabel="Open queue" onPress={() => { haptic.selection(); setQueueVisible(true); }} style={styles.toolItem}>
             <Ionicons name="list-outline" size={20} color={theme.accent} />
             <Text style={[styles.toolText, { color: theme.foreground }]}>Queue</Text>
-          </Pressable>
+          </MotionPressable>
         </View>
 
         <View style={[styles.availability, { backgroundColor: theme.raised, borderColor: theme.border }]}>
@@ -200,5 +202,4 @@ const styles = StyleSheet.create({
   toolDivider: { width: StyleSheet.hairlineWidth, height: 20 },
   availability: { flexDirection: "row", alignItems: "center", gap: 7, borderRadius: 11, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 10, paddingVertical: 8 },
   availabilityText: { flex: 1, fontSize: 10, lineHeight: 13, fontWeight: "500" },
-  pressed: { opacity: 0.68, transform: [{ scale: 0.97 }] },
 });

@@ -24,6 +24,12 @@ Public discussion of Persona 5 and Persona 4 is used only for general interactio
 
 The shared artwork transition must be interruptible, preserve VoiceOver focus, and become opacity-only when Reduced Motion is active. Queue reordering retains a visible drag handle, announces a changed position, and never changes the playing track just because a row moves.
 
+## Non-static interaction observations
+
+The reviewed design analysis describes transitions as devices for carrying attention between interface states, rather than decoration. In particular, directional shape movement can establish where attention should travel, while small text and number changes can keep a fast interface legible. [1] Sphynx translates that into a clear interaction rule: every primary press produces depth, hue, or positional feedback; every section change has an entering and settled state; and persistent controls are never left visually inert.
+
+The Pinterest visual-reference board was treated as a source of broad inspiration only. Its public surface confirmed the value of collecting visual references, but Sphynx will not import, trace, reproduce, or ship any pins, game assets, or screen layouts. [7] The original materials therefore use distinct names, Sphynx-specific copy, native layout proportions, and custom shader/panel treatments.
+
 ## Implementation decision
 
 Reanimated’s cross-screen shared-element transitions are marked experimental and have native-stack, tab-navigation, modal, and web limitations. [4] Sphynx will instead create an **app-owned shared artwork illusion**: both Mini Player and Now Playing retain their normal artwork, while a temporary overlay artwork animates between measured source and destination bounds. It can be interrupted, reduced to an opacity transition, and falls back safely on web.
@@ -43,3 +49,5 @@ For queue reordering, the verified `react-native-draggable-flatlist` API is buil
 [5] computerjazz, [React Native Draggable FlatList](https://github.com/computerjazz/react-native-draggable-flatlist).
 
 [6] React Native, [Accessibility](https://reactnative.dev/docs/next/accessibility).
+
+[7] Pinterest, [Persona 4 UI Design Ideas](https://www.pinterest.com/ideas/persona-4-ui-design/961004067998/).
