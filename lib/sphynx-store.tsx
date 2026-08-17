@@ -5,9 +5,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { createEqPreset, createHeadphoneGroup, DEFAULT_AUDIO_SETTINGS, DEFAULT_HEADPHONE_GROUP, normalizeAudioSettings, normalizeHeadphoneGroupName, type AudioSettingsSnapshot, type EqPreset, type HeadphoneGroup } from "@/lib/audio-settings-core";
 import { nativeVolumeFromTrim } from "@/lib/advanced-audio-core";
 import { findMatchingHeadphoneGroup, UNKNOWN_AUDIO_ROUTE, type DetectedAudioRoute } from "@/lib/audio-route-core";
+import { buildDspPlaybackConfiguration } from "@/lib/dsp-player-core";
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
 import { pickLocalMusicFiles } from "@/lib/local-music";
 import { addAudioRouteListener, audioRouteDetectionAvailable, getCurrentAudioRoute } from "@/modules/expo-audio-route";
+import { addDspPlaybackListener, dspPlaybackAvailable, getDspStatus, loadDspTrack, pauseDspTrack, playDspTrack, seekDspTrack, setDspConfiguration, unloadDspTrack, type DspPlaybackStatus } from "@/modules/expo-dsp-player";
 
 export type ProviderId = "Sphynx" | "TIDAL" | "YouTube" | "Local";
 export type ThemeId = "obsidian" | "cobalt" | "porcelain" | "ember";
@@ -191,6 +193,8 @@ type SphynxContextValue = {
   playbackSeconds: number;
   playbackDuration: number;
   localPlaybackError: string | null;
+  dspPlaybackAvailable: boolean;
+  dspProcessingActive: boolean;
   setProgress: (value: number) => void;
   togglePlayback: () => void;
   playTrack: (track: Track) => void;
@@ -244,6 +248,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [playbackSeconds, setPlaybackSeconds] = useState(0);
   const [playbackDuration, setPlaybackDuration] = useState(0);
   const [localPlaybackError, setLocalPlaybackError] = useState<string | null>(null);
+  const [dspProcessingActive, setDspProcessingActive] = useState(false);
   const [eqPresets, setEqPresets] = useState<EqPreset[]>([]);
   const [activeEqPresetId, setActiveEqPresetId] = useState<string | null>(null);
   const [headphoneGroups, setHeadphoneGroups] = useState<HeadphoneGroup[]>([DEFAULT_HEADPHONE_GROUP]);
@@ -252,6 +257,8 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [eqPresetsHydrated, setEqPresetsHydrated] = useState(false);
   const nativePlayerRef = useRef<AudioPlayer | null>(null);
   const nativeTrackIdRef = useRef<string | null>(null);
+  const dspTrackIdRef = useRef<string | null>(null);
+  const dspStatusSubscriptionRef = useRef<{ remove: () => void } | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -336,6 +343,10 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       nativePlayerRef.current?.remove();
       nativePlayerRef.current = null;
       nativeTrackIdRef.current = null;
+      dspStatusSubscriptionRef.current?.remove();
+      dspStatusSubscriptionRef.current = null;
+      dspTrackIdRef.current = null;
+      void unloadDspTrack();
     };
   }, []);
 
@@ -462,19 +473,69 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     nativePlayerRef.current = null;
     nativeTrackIdRef.current = null;
   }, []);
+  const handleDspStatus = useCallback((trackId: string, status: DspPlaybackStatus) => {
+    if (dspTrackIdRef.current !== trackId) return;
+    const duration = Number.isFinite(status.duration) ? status.duration : 0;
+    const seconds = Number.isFinite(status.currentTime) ? status.currentTime : 0;
+    setPlaybackDuration(duration);
+    setPlaybackSeconds(seconds);
+    setProgress(duration > 0 ? clamp(seconds / duration, 0, 1) : 0);
+    setIsPlaying(Boolean(status.playing));
+    setDspProcessingActive(Boolean(status.processingActive));
+  }, []);
+  const stopDspPlayer = useCallback(() => {
+    dspStatusSubscriptionRef.current?.remove();
+    dspStatusSubscriptionRef.current = null;
+    dspTrackIdRef.current = null;
+    setDspProcessingActive(false);
+    void unloadDspTrack();
+  }, []);
   useEffect(() => {
     const player = nativePlayerRef.current;
-    if (!player) return;
-    player.setPlaybackRate(sound.playbackRate, sound.pitchCorrectionQuality);
-    player.shouldCorrectPitch = sound.pitchCorrectionEnabled;
-    player.loop = sound.repeatOne;
-    player.volume = nativeVolumeFromTrim(sound.outputTrim);
-  }, [sound.outputTrim, sound.pitchCorrectionEnabled, sound.pitchCorrectionQuality, sound.playbackRate, sound.repeatOne]);
+    if (player) {
+      player.setPlaybackRate(sound.playbackRate, sound.pitchCorrectionQuality);
+      player.shouldCorrectPitch = sound.pitchCorrectionEnabled;
+      player.loop = sound.repeatOne;
+      player.volume = nativeVolumeFromTrim(sound.outputTrim);
+    }
+    if (dspTrackIdRef.current && dspPlaybackAvailable) {
+      void setDspConfiguration(buildDspPlaybackConfiguration(sound))
+        .then((status) => handleDspStatus(dspTrackIdRef.current ?? "", status))
+        .catch(() => {
+          setDspProcessingActive(false);
+          setLocalPlaybackError("Sphynx could not update the DSP path. Standard playback remains available.");
+        });
+    }
+  }, [handleDspStatus, sound]);
+  const playDspLocalTrack = useCallback(async (track: Track, startPlaying: boolean) => {
+    if (!track.localUri || !dspPlaybackAvailable) return false;
+    try {
+      stopDspPlayer();
+      const status = await loadDspTrack(track.localUri, buildDspPlaybackConfiguration(sound));
+      dspTrackIdRef.current = track.id;
+      dspStatusSubscriptionRef.current = addDspPlaybackListener(({ status: nextStatus }) => handleDspStatus(track.id, nextStatus));
+      handleDspStatus(track.id, status);
+      setCurrentTrack(track);
+      setProgress(0);
+      setPlaybackSeconds(0);
+      setPlaybackDuration(status.duration || 0);
+      if (startPlaying) {
+        const playingStatus = await playDspTrack();
+        handleDspStatus(track.id, playingStatus);
+      }
+      return true;
+    } catch {
+      stopDspPlayer();
+      return false;
+    }
+  }, [handleDspStatus, sound, stopDspPlayer]);
   const playLocalTrack = useCallback(async (track: Track, startPlaying = true) => {
     if (!track.localUri) return false;
     try {
       setLocalPlaybackError(null);
       stopNativePlayer();
+      const startedWithDsp = await playDspLocalTrack(track, startPlaying);
+      if (startedWithDsp) return true;
       const player = createAudioPlayer(track.localUri, { updateInterval: 250, keepAudioSessionActive: true });
       player.setPlaybackRate(sound.playbackRate, sound.pitchCorrectionQuality);
       player.shouldCorrectPitch = sound.pitchCorrectionEnabled;
@@ -496,21 +557,26 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       setLocalPlaybackError("Sphynx could not play this local file. Try MP3, AAC, M4A, or WAV.");
       return false;
     }
-  }, [handleNativeStatus, sound.outputTrim, sound.pitchCorrectionEnabled, sound.pitchCorrectionQuality, sound.playbackRate, sound.repeatOne, stopNativePlayer]);
+  }, [handleNativeStatus, playDspLocalTrack, sound.outputTrim, sound.pitchCorrectionEnabled, sound.pitchCorrectionQuality, sound.playbackRate, sound.repeatOne, stopNativePlayer]);
   const setPlaybackProgress = useCallback((nextProgress: number) => {
     const bounded = clamp(nextProgress, 0, 1);
     setProgress(bounded);
     const player = nativePlayerRef.current;
     const duration = player?.duration || playbackDuration;
-    if (currentTrack.localUri && player && duration > 0) {
+    if (currentTrack.localUri && dspTrackIdRef.current === currentTrack.id && duration > 0) {
+      void seekDspTrack(duration * bounded)
+        .then((status) => handleDspStatus(currentTrack.id, status))
+        .catch(() => setLocalPlaybackError("Sphynx could not seek in this file."));
+    } else if (currentTrack.localUri && player && duration > 0) {
       void player.seekTo(duration * bounded).catch(() => setLocalPlaybackError("Sphynx could not seek in this file."));
     }
-  }, [currentTrack.localUri, playbackDuration]);
+  }, [currentTrack, handleDspStatus, playbackDuration]);
   const playTrack = useCallback((track: Track) => {
     if (track.localUri) {
       void playLocalTrack(track, true);
       return;
     }
+    stopDspPlayer();
     stopNativePlayer();
     setLocalPlaybackError(null);
     setCurrentTrack(track);
@@ -518,10 +584,21 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     setPlaybackSeconds(0);
     setPlaybackDuration(0);
     setIsPlaying(true);
-  }, [playLocalTrack, stopNativePlayer]);
+  }, [playLocalTrack, stopDspPlayer, stopNativePlayer]);
   const togglePlayback = useCallback(() => {
     const player = nativePlayerRef.current;
     if (currentTrack.localUri) {
+      if (dspTrackIdRef.current === currentTrack.id) {
+        if (isPlaying) {
+          void pauseDspTrack().then((status) => handleDspStatus(currentTrack.id, status));
+        } else {
+          void getDspStatus()
+            .then((status) => status.duration > 0 && status.currentTime >= status.duration ? seekDspTrack(0) : status)
+            .then(() => playDspTrack())
+            .then((status) => handleDspStatus(currentTrack.id, status));
+        }
+        return;
+      }
       if (!player || nativeTrackIdRef.current !== currentTrack.id) {
         void playLocalTrack(currentTrack, true);
         return;
@@ -539,7 +616,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setIsPlaying((value) => !value);
-  }, [currentTrack, playLocalTrack]);
+  }, [currentTrack, handleDspStatus, isPlaying, playLocalTrack]);
   const skip = useCallback(
     (direction: "next" | "previous") => {
       const fullQueue = [...libraryTracks, ...importedTracks];
@@ -566,6 +643,8 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       playbackSeconds,
       playbackDuration,
       localPlaybackError,
+      dspPlaybackAvailable,
+      dspProcessingActive,
       setProgress: setPlaybackProgress,
       togglePlayback,
       playTrack,
@@ -592,7 +671,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       localImportMessage,
       importLocalTracks,
     }),
-    [activeEqPresetId, activeHeadphoneGroupId, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, renameHeadphoneGroup, saveEqPreset, setActiveHeadphoneGroupId, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
+    [activeEqPresetId, activeHeadphoneGroupId, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, dspProcessingActive, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, progress, renameHeadphoneGroup, saveEqPreset, setActiveHeadphoneGroupId, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
   );
 
   return <SphynxContext.Provider value={value}>{children}</SphynxContext.Provider>;

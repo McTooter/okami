@@ -54,10 +54,8 @@ export function nativeVolumeFromTrim(outputTrim: number) {
 }
 
 export const ENGINE_REQUIRED_CONTROLS = [
-  "Parametric EQ",
   "Crossfeed",
   "Spatial width",
-  "Compressor",
   "ReplayGain",
   "Phase inversion",
   "High-quality resampling",

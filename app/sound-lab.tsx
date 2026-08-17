@@ -33,7 +33,7 @@ function Stepper({ label, value, onDecrease, onIncrease, unit }: { label: string
 
 export default function SoundLabScreen() {
   const router = useRouter();
-  const { theme, sound, setSound, eqPresets, activeEqPresetId, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId, createHeadphoneGroup, renameHeadphoneGroup, deleteHeadphoneGroup, saveEqPreset, applyEqPreset, overwriteActiveEqPreset, deleteEqPreset } = useSphynx();
+  const { theme, sound, setSound, eqPresets, activeEqPresetId, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId, createHeadphoneGroup, renameHeadphoneGroup, deleteHeadphoneGroup, saveEqPreset, applyEqPreset, overwriteActiveEqPreset, deleteEqPreset, currentTrack, dspPlaybackAvailable, dspProcessingActive } = useSphynx();
   const [presetName, setPresetName] = useState("");
   const [deviceName, setDeviceName] = useState("");
   const [exportMessage, setExportMessage] = useState<string | null>(null);
@@ -81,8 +81,16 @@ export default function SoundLabScreen() {
         <Text style={[styles.pageTitle, { color: theme.foreground }]}>Shape the room, not the truth.</Text>
         <Text style={[styles.intro, { color: theme.muted }]}>Controls apply only where the active source and approved playback engine can honor them. High gain is intentionally guarded.</Text>
 
+        <View style={[styles.dspStatus, { backgroundColor: dspProcessingActive ? theme.accent : theme.raised, borderColor: dspProcessingActive ? theme.accent : theme.border }]}>
+          <Ionicons name={dspProcessingActive ? "pulse-outline" : "hardware-chip-outline"} size={17} color={dspProcessingActive ? theme.accentInk : theme.accent} />
+          <View style={styles.dspStatusCopy}>
+            <Text style={[styles.dspStatusTitle, { color: dspProcessingActive ? theme.accentInk : theme.foreground }]}>{dspProcessingActive ? "Native DSP is processing this local track" : dspPlaybackAvailable ? "Native DSP ready" : "Standard player fallback"}</Text>
+            <Text style={[styles.dspStatusNote, { color: dspProcessingActive ? theme.accentInk : theme.muted }]}>{dspProcessingActive ? "Parametric EQ, preamp, limiter, compressor, and loudness contour are active." : dspPlaybackAvailable ? currentTrack.localUri ? "Press play on an imported file to engage the native chain." : "Import a local track to use Sphynx’s Audio Unit chain." : "Custom iOS build required for live Audio Unit processing."}</Text>
+          </View>
+        </View>
+
         <View style={[styles.eqCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <View style={styles.eqHeader}><Text style={[styles.eqTitle, { color: theme.foreground }]}>Five-band equalizer</Text><Text style={[styles.eqNote, { color: theme.muted }]}>Tap a band to step</Text></View>
+          <View style={styles.eqHeader}><Text style={[styles.eqTitle, { color: theme.foreground }]}>Five-band parametric EQ</Text><Text style={[styles.eqNote, { color: theme.muted }]}>Tap a band to step</Text></View>
           <View style={styles.bands}>
             {bands.map((band, index) => {
               const db = sound.eq[index];
@@ -218,17 +226,17 @@ export default function SoundLabScreen() {
 
         <View style={[styles.engineCard, { backgroundColor: theme.raised, borderColor: theme.border }]}>
           <View style={styles.rackHeading}>
-            <View><Text style={[styles.rackTitle, { color: theme.foreground }]}>Reference DSP shelf</Text><Text style={[styles.rackNote, { color: theme.muted }]}>Profiles remember these choices; waveform processing awaits Sphynx’s dedicated native DSP engine.</Text></View>
+            <View><Text style={[styles.rackTitle, { color: theme.foreground }]}>Native DSP rack</Text><Text style={[styles.rackNote, { color: theme.muted }]}>EQ, limiter, compressor, and loudness contour run in the iOS Audio Unit chain for imported files.</Text></View>
             <Ionicons name="hardware-chip-outline" size={20} color={theme.accent} />
           </View>
           <View style={styles.toolsGroup}>
             <Stepper label="Crossfeed" value={String(sound.crossfeed)} unit="%" onDecrease={() => { haptic.selection(); setSound({ crossfeed: Math.max(0, sound.crossfeed - 5) }); }} onIncrease={() => { haptic.selection(); setSound({ crossfeed: Math.min(100, sound.crossfeed + 5) }); }} />
             <Stepper label="Spatial width" value={String(sound.spatialWidth)} unit="%" onDecrease={() => { haptic.selection(); setSound({ spatialWidth: Math.max(0, sound.spatialWidth - 5) }); }} onIncrease={() => { haptic.selection(); setSound({ spatialWidth: Math.min(100, sound.spatialWidth + 5) }); }} />
           </View>
-          <Text style={[styles.choiceLabel, { color: theme.muted }]}>Loudness reference</Text>
+          <Text style={[styles.choiceLabel, { color: theme.muted }]}>Loudness contour</Text>
           <View style={styles.choiceRow}>{(["off", "track", "album"] as LoudnessMode[]).map((mode) => <Pressable key={mode} onPress={() => { haptic.selection(); setSound({ loudnessMode: mode }); }} style={({ pressed }) => [styles.choiceChip, { borderColor: sound.loudnessMode === mode ? theme.accent : theme.border, backgroundColor: sound.loudnessMode === mode ? theme.accent : theme.surface }, pressed && styles.pressed]}><Text style={[styles.choiceText, { color: sound.loudnessMode === mode ? theme.accentInk : theme.foreground }]}>{mode}</Text></Pressable>)}</View>
           <View style={styles.switchRow}>
-            <Pressable accessibilityLabel="Toggle compressor request" onPress={() => { haptic.selection(); setSound({ compressor: !sound.compressor }); }} style={({ pressed }) => [styles.smallToggle, { backgroundColor: sound.compressor ? theme.accent : theme.surface, borderColor: sound.compressor ? theme.accent : theme.border }, pressed && styles.pressed]}><Text style={[styles.smallToggleText, { color: sound.compressor ? theme.accentInk : theme.foreground }]}>Compressor</Text></Pressable>
+            <Pressable accessibilityLabel="Toggle compressor" onPress={() => { haptic.selection(); setSound({ compressor: !sound.compressor }); }} style={({ pressed }) => [styles.smallToggle, { backgroundColor: sound.compressor ? theme.accent : theme.surface, borderColor: sound.compressor ? theme.accent : theme.border }, pressed && styles.pressed]}><Text style={[styles.smallToggleText, { color: sound.compressor ? theme.accentInk : theme.foreground }]}>Compressor</Text></Pressable>
             <Pressable accessibilityLabel="Toggle phase inversion request" onPress={() => { haptic.selection(); setSound({ phaseInverted: !sound.phaseInverted }); }} style={({ pressed }) => [styles.smallToggle, { backgroundColor: sound.phaseInverted ? theme.accent : theme.surface, borderColor: sound.phaseInverted ? theme.accent : theme.border }, pressed && styles.pressed]}><Text style={[styles.smallToggleText, { color: sound.phaseInverted ? theme.accentInk : theme.foreground }]}>Invert phase</Text></Pressable>
           </View>
           <Text style={[styles.choiceLabel, { color: theme.muted }]}>Resampler target</Text>
@@ -273,6 +281,10 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 10, fontWeight: "800", letterSpacing: 1.35, marginBottom: 6 },
   pageTitle: { fontSize: 30, lineHeight: 36, fontWeight: "800", letterSpacing: -1.1, maxWidth: 330 },
   intro: { fontSize: 13, lineHeight: 19, marginTop: 10, marginBottom: 24, maxWidth: 352 },
+  dspStatus: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: 13, marginBottom: 15 },
+  dspStatusCopy: { flex: 1 },
+  dspStatusTitle: { fontSize: 12, fontWeight: "800" },
+  dspStatusNote: { fontSize: 10, lineHeight: 14, marginTop: 3 },
   eqCard: { borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginBottom: 15 },
   eqHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
   eqTitle: { fontSize: 16, fontWeight: "800" },

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildAudioSettingsExport, createEqPreset, createHeadphoneGroup, DEFAULT_AUDIO_SETTINGS, DEFAULT_HEADPHONE_GROUP, normalizeAudioSettings, normalizeHeadphoneGroupName, normalizePresetName } from "../lib/audio-settings-core";
 import { clampAdvancedAudioSettings, nativeVolumeFromTrim } from "../lib/advanced-audio-core";
 import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
+import { buildDspPlaybackConfiguration, isDspProcessingEnabled } from "../lib/dsp-player-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
@@ -78,5 +79,32 @@ describe("Sphynx playback boundaries", () => {
     expect(clampAdvancedAudioSettings({ playbackRate: 0.2, outputTrim: -20 })).toMatchObject({ playbackRate: 0.5, outputTrim: -12 });
     expect(nativeVolumeFromTrim(0)).toBe(1);
     expect(nativeVolumeFromTrim(-6)).toBeCloseTo(0.501, 2);
+  });
+
+  it("maps persisted Sound Lab controls to a real native DSP configuration", () => {
+    const configuration = buildDspPlaybackConfiguration(normalizeAudioSettings({
+      ...DEFAULT_AUDIO_SETTINGS,
+      eq: [2, -1, 0, 1, 3],
+      preamp: -1.5,
+      outputTrim: -3,
+      limiter: true,
+      loudnessMode: "album",
+      compressor: true,
+      playbackRate: 1.1,
+      repeatOne: true,
+    }));
+
+    expect(configuration).toMatchObject({
+      eq: [2, -1, 0, 1, 3],
+      preamp: -1.5,
+      outputTrim: -3,
+      limiter: true,
+      loudnessMode: "album",
+      compressor: true,
+      playbackRate: 1.1,
+      repeatOne: true,
+    });
+    expect(isDspProcessingEnabled(configuration)).toBe(true);
+    expect(isDspProcessingEnabled(buildDspPlaybackConfiguration(DEFAULT_AUDIO_SETTINGS))).toBe(true);
   });
 });

@@ -27,3 +27,8 @@
 - [x] Research Neutron Music Player’s publicly documented audio capabilities and separate feasible controls from native DSP requirements.
 - [x] Add original Sphynx advanced-audio controls, including expanded EQ architecture, playback gain behavior, spatial and timing preferences, and device-scoped state.
 - [x] Add advanced-audio presets, export compatibility, and deterministic validation for feasible controls.
+- [x] Research iOS Audio Unit implementation details and document a safe native Sphynx DSP signal chain.
+- [x] Add an autolinked iOS-native DSP module for local-track playback with real multiband parametric EQ and preamp processing.
+- [x] Add real loudness processing controls, native playback-state bridging, and a clear standard-player fallback.
+- [x] Connect Sound Lab to DSP activation, configuration status, and validate settings translation and safe parameter boundaries.
+- [x] Correct root-podspec autolinking metadata and verify both local iOS bridges resolve for a custom build.
