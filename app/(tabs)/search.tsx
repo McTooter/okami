@@ -5,22 +5,22 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import { MiniPlayer, SectionHeading, TrackRow } from "@/components/sphynx/controls";
 import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
-import { libraryTracks, type Track, useSphynx } from "@/lib/sphynx-store";
+import { type Track, useSphynx } from "@/lib/sphynx-store";
 
 const filters = ["All", "Library", "TIDAL", "YouTube"] as const;
 type Filter = (typeof filters)[number];
 
 export default function SearchScreen() {
-  const { theme } = useSphynx();
+  const { theme, tracks } = useSphynx();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("All");
   const results = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return libraryTracks.filter((track) => {
+    return tracks.filter((track) => {
       const matchesSource = filter === "All" || (filter === "Library" ? ["Sphynx", "Local"].includes(track.provider) : track.provider === filter);
       return matchesSource && (!term || `${track.title} ${track.artist} ${track.album}`.toLowerCase().includes(term));
     });
-  }, [filter, query]);
+  }, [filter, query, tracks]);
 
   return (
     <ScreenContainer containerStyle={{ backgroundColor: theme.background }} style={{ backgroundColor: theme.background }}>

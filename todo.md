@@ -10,3 +10,6 @@
 - [x] Create and install a custom Sphynx launcher icon and update app branding configuration.
 - [x] Add deterministic tests for critical interaction and state flows.
 - [x] Validate the app, resolve runtime errors, and capture a tested checkpoint.
+- [x] Add device-local music-file selection, persistent imported-track metadata, and an import status surface.
+- [x] Integrate expo-audio for real playback, seek, queue switching, audio-mode handling, and player cleanup.
+- [x] Add deterministic tests and validation for local-import and playback-helper behavior.

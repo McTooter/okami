@@ -6,11 +6,11 @@ import { AlbumArt } from "@/components/sphynx/album-art";
 import { Metric, MiniPlayer, SectionHeading, SourceBadge, TrackRow } from "@/components/sphynx/controls";
 import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
-import { libraryTracks, type Track, useSphynx } from "@/lib/sphynx-store";
+import { type Track, useSphynx } from "@/lib/sphynx-store";
 
 export default function LibraryScreen() {
   const router = useRouter();
-  const { theme, currentTrack, isPlaying, playTrack } = useSphynx();
+  const { theme, currentTrack, importedTracks, isImporting, isPlaying, localImportMessage, playTrack, importLocalTracks, tracks } = useSphynx();
 
   const openNowPlaying = () => {
     haptic.light();
@@ -21,7 +21,7 @@ export default function LibraryScreen() {
   return (
     <ScreenContainer containerStyle={{ backgroundColor: theme.background }} style={{ backgroundColor: theme.background }}>
       <FlatList<Track>
-        data={libraryTracks}
+        data={tracks}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item, index }) => <TrackRow track={item} index={index} />}
@@ -62,9 +62,25 @@ export default function LibraryScreen() {
               </View>
             </Pressable>
 
+            <Pressable
+              accessibilityLabel="Import music files from this device"
+              disabled={isImporting}
+              onPress={() => { haptic.medium(); void importLocalTracks(); }}
+              style={({ pressed }) => [styles.importCard, { backgroundColor: theme.raised, borderColor: theme.border }, pressed && !isImporting && styles.pressed, isImporting && styles.disabled]}
+            >
+              <View style={[styles.importIcon, { backgroundColor: theme.accent }]}>
+                <Ionicons name="folder-open-outline" size={19} color={theme.accentInk} />
+              </View>
+              <View style={styles.importCopy}>
+                <Text style={[styles.importTitle, { color: theme.foreground }]}>{isImporting ? "Opening Files…" : "Import music files"}</Text>
+                <Text style={[styles.importText, { color: theme.muted }]}>{localImportMessage ?? `${importedTracks.length} local ${importedTracks.length === 1 ? "track" : "tracks"} stored on this iPhone`}</Text>
+              </View>
+              <Ionicons name="add" size={22} color={theme.accent} />
+            </Pressable>
+
             <View style={[styles.metricBand, { borderColor: theme.border }]}>
-              <Metric value="248" label="Saved tracks" />
-              <Metric value="18:42" label="Downloaded" />
+              <Metric value={String(tracks.length)} label="Saved tracks" />
+              <Metric value={String(importedTracks.length).padStart(2, "0")} label="On this iPhone" />
               <Metric value="02" label="Sources" emphasis />
             </View>
 
@@ -86,6 +102,11 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 31, lineHeight: 37, letterSpacing: -1.15, fontWeight: "800" },
   iconButton: { width: 44, height: 44, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
   nowCard: { borderRadius: 23, borderWidth: StyleSheet.hairlineWidth, padding: 14, marginBottom: 16 },
+  importCard: { minHeight: 72, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", paddingHorizontal: 13, gap: 11, marginBottom: 18 },
+  importIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  importCopy: { flex: 1, minWidth: 0 },
+  importTitle: { fontSize: 14, fontWeight: "800" },
+  importText: { fontSize: 11, lineHeight: 15, marginTop: 3 },
   nowCardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 13 },
   nowLabel: { fontSize: 10, letterSpacing: 1.15, fontWeight: "800" },
   nowContent: { flexDirection: "row", gap: 14, alignItems: "center" },
@@ -98,4 +119,5 @@ const styles = StyleSheet.create({
   actionHint: { fontSize: 11, fontWeight: "600" },
   metricBand: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 13, marginBottom: 26 },
   pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
+  disabled: { opacity: 0.55 },
 });

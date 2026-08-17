@@ -10,7 +10,7 @@ import { haptic } from "@/lib/haptics";
 import { useSphynx } from "@/lib/sphynx-store";
 
 function ProgressRail() {
-  const { theme, progress, setProgress } = useSphynx();
+  const { theme, currentTrack, playbackDuration, playbackSeconds, progress, setProgress } = useSphynx();
   const [railWidth, setRailWidth] = useState(1);
   const selectPosition = (event: GestureResponderEvent) => {
     const { locationX } = event.nativeEvent;
@@ -26,8 +26,8 @@ function ProgressRail() {
         </View>
       </Pressable>
       <View style={styles.timeRow}>
-        <Text style={[styles.time, { color: theme.muted }]}>{formatTime(252 * progress)}</Text>
-        <Text style={[styles.time, { color: theme.muted }]}>4:12</Text>
+        <Text style={[styles.time, { color: theme.muted }]}>{formatTime(playbackDuration > 0 ? playbackSeconds : durationSeconds(currentTrack.duration) * progress)}</Text>
+        <Text style={[styles.time, { color: theme.muted }]}>{playbackDuration > 0 ? formatTime(playbackDuration) : currentTrack.duration}</Text>
       </View>
     </View>
   );
@@ -39,9 +39,14 @@ function formatTime(seconds: number) {
   return `${minutes}:${remaining}`;
 }
 
+function durationSeconds(duration: string) {
+  const [minutes, seconds] = duration.split(":").map(Number);
+  return Number.isFinite(minutes) && Number.isFinite(seconds) ? minutes * 60 + seconds : 0;
+}
+
 export default function NowPlayingScreen() {
   const router = useRouter();
-  const { theme, currentTrack, isPlaying, togglePlayback, skip } = useSphynx();
+  const { theme, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip } = useSphynx();
 
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]} containerStyle={{ backgroundColor: theme.background }} style={{ backgroundColor: theme.background }}>
@@ -108,8 +113,8 @@ export default function NowPlayingScreen() {
 
         <View style={[styles.availability, { backgroundColor: theme.raised, borderColor: theme.border }]}>
           <Ionicons name={currentTrack.available === "authorized" ? "checkmark-circle-outline" : "information-circle-outline"} size={15} color={theme.accent} />
-          <Text style={[styles.availabilityText, { color: theme.muted }]}>
-            {currentTrack.available === "preview" ? "Preview behavior depends on the connected service." : currentTrack.available === "handoff" ? "This source may open through its approved player." : "Eligible local or Sphynx playback controls are available."}
+          <Text style={[styles.availabilityText, { color: localPlaybackError ? theme.danger : theme.muted }]}>
+            {localPlaybackError ?? (currentTrack.localUri ? "Playing from a file stored privately on this iPhone." : currentTrack.available === "preview" ? "Preview behavior depends on the connected service." : currentTrack.available === "handoff" ? "This source may open through its approved player." : "Eligible local or Sphynx playback controls are available.")}
           </Text>
         </View>
       </View>

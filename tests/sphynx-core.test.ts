@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
 describe("Sphynx playback boundaries", () => {
@@ -24,5 +25,17 @@ describe("Sphynx playback boundaries", () => {
     expect(adjustPreamp(5.8, 0.5)).toBe(6);
     expect(adjustPreamp(-5.8, -0.5)).toBe(-6);
     expect(adjustPreamp(0, 0.5)).toBe(0.5);
+  });
+
+  it("turns a selected music file into readable, safe local-library metadata", () => {
+    expect(buildLocalImportIdentity("Kiasmos_–_Looped.m4a", 1723982400000, 2)).toEqual({
+      id: "local-1723982400000-2",
+      title: "Kiasmos – Looped",
+      storageFileName: "local-1723982400000-2-Kiasmos_-_Looped.m4a",
+    });
+  });
+
+  it("gives a valid fallback title when a selected file has no readable stem", () => {
+    expect(buildLocalImportIdentity(".mp3", 1723982400000, 0).title).toBe("Untitled import");
   });
 });

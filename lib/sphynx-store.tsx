@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from "expo-audio";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
+import { pickLocalMusicFiles } from "@/lib/local-music";
 
 export type ProviderId = "Sphynx" | "TIDAL" | "YouTube" | "Local";
 export type ThemeId = "obsidian" | "cobalt" | "porcelain" | "ember";
@@ -16,6 +18,8 @@ export type Track = {
   artwork: ArtworkId;
   accent: string;
   available: "authorized" | "preview" | "handoff";
+  localUri?: string;
+  importedAt?: number;
 };
 
 export type ArtworkId = "interval" | "horizon" | "kepler" | "sleepwalk" | "verge" | "resonance";
@@ -184,8 +188,13 @@ type SphynxContextValue = {
   setThemeId: (theme: ThemeId) => void;
   currentTrack: Track;
   queue: Track[];
+  tracks: Track[];
+  importedTracks: Track[];
   isPlaying: boolean;
   progress: number;
+  playbackSeconds: number;
+  playbackDuration: number;
+  localPlaybackError: string | null;
   setProgress: (value: number) => void;
   togglePlayback: () => void;
   playTrack: (track: Track) => void;
@@ -194,9 +203,13 @@ type SphynxContextValue = {
   setSound: (patch: Partial<SoundSettings>) => void;
   connected: Record<ProviderId, boolean>;
   setConnected: (provider: ProviderId, value: boolean) => void;
+  isImporting: boolean;
+  localImportMessage: string | null;
+  importLocalTracks: () => Promise<void>;
 };
 
 const STORAGE_KEY = "sphynx.preferences.v1";
+const LOCAL_LIBRARY_KEY = "sphynx.local-library.v1";
 const defaultSound: SoundSettings = {
   preamp: 0,
   limiter: true,
@@ -221,6 +234,15 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track>(libraryTracks[0]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0.36);
+  const [importedTracks, setImportedTracks] = useState<Track[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const [localImportMessage, setLocalImportMessage] = useState<string | null>(null);
+  const [localLibraryHydrated, setLocalLibraryHydrated] = useState(false);
+  const [playbackSeconds, setPlaybackSeconds] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
+  const [localPlaybackError, setLocalPlaybackError] = useState<string | null>(null);
+  const nativePlayerRef = useRef<AudioPlayer | null>(null);
+  const nativeTrackIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -244,12 +266,45 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   }, [themeId, sound, connected]);
 
   useEffect(() => {
+    AsyncStorage.getItem(LOCAL_LIBRARY_KEY)
+      .then((stored) => {
+        if (!stored) return;
+        const parsed = JSON.parse(stored) as Track[];
+        setImportedTracks(parsed.filter((track) => track.provider === "Local" && Boolean(track.localUri)));
+      })
+      .catch(() => undefined)
+      .finally(() => setLocalLibraryHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (!localLibraryHydrated) return;
+    AsyncStorage.setItem(LOCAL_LIBRARY_KEY, JSON.stringify(importedTracks)).catch(() => undefined);
+  }, [importedTracks, localLibraryHydrated]);
+
+  useEffect(() => {
     if (!isPlaying) return;
+    if (currentTrack.localUri) return;
     const timer = setInterval(() => {
       setProgress((value) => advanceProgress(value, 0.001));
     }, 800);
     return () => clearInterval(timer);
   }, [isPlaying]);
+
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: "duckOthers",
+      interruptionModeAndroid: "duckOthers",
+    }).catch(() => undefined);
+
+    return () => {
+      nativePlayerRef.current?.pause();
+      nativePlayerRef.current?.remove();
+      nativePlayerRef.current = null;
+      nativeTrackIdRef.current = null;
+    };
+  }, []);
 
   const setThemeId = useCallback((nextTheme: ThemeId) => setThemeIdState(nextTheme), []);
   const setSound = useCallback((patch: Partial<SoundSettings>) => {
@@ -258,22 +313,130 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const setConnected = useCallback((provider: ProviderId, value: boolean) => {
     setConnectedState((current) => ({ ...current, [provider]: value }));
   }, []);
-  const setPlaybackProgress = useCallback((nextProgress: number) => setProgress(clamp(nextProgress, 0, 1)), []);
+  const importLocalTracks = useCallback(async () => {
+    if (isImporting) return;
+    setIsImporting(true);
+    setLocalImportMessage(null);
+    try {
+      const selectedFiles = await pickLocalMusicFiles();
+      if (!selectedFiles.length) {
+        setLocalImportMessage("Import cancelled.");
+        return;
+      }
+      const imports: Track[] = selectedFiles.map((file, index) => ({
+        id: file.id,
+        title: file.title,
+        artist: "Imported file",
+        album: "On this iPhone",
+        duration: "—",
+        provider: "Local",
+        artwork: "resonance",
+        accent: ["#71D6D1", "#CAFF4A", "#8DA8FF", "#FFA779"][index % 4],
+        available: "authorized",
+        localUri: file.uri,
+        importedAt: file.importedAt,
+      }));
+      setImportedTracks((current) => [...imports, ...current]);
+      setLocalImportMessage(`${imports.length} ${imports.length === 1 ? "track" : "tracks"} added to this iPhone.`);
+    } catch {
+      setLocalImportMessage("Sphynx could not import those files. Try a standard audio file.");
+    } finally {
+      setIsImporting(false);
+    }
+  }, [isImporting]);
+  const handleNativeStatus = useCallback((trackId: string, status: AudioStatus) => {
+    if (nativeTrackIdRef.current !== trackId) return;
+    const duration = Number.isFinite(status.duration) ? status.duration : 0;
+    const seconds = Number.isFinite(status.currentTime) ? status.currentTime : 0;
+    setPlaybackDuration(duration);
+    setPlaybackSeconds(seconds);
+    setProgress(duration > 0 ? clamp(seconds / duration, 0, 1) : 0);
+    setIsPlaying(status.playing);
+  }, []);
+  const stopNativePlayer = useCallback(() => {
+    nativePlayerRef.current?.pause();
+    nativePlayerRef.current?.clearLockScreenControls();
+    nativePlayerRef.current?.remove();
+    nativePlayerRef.current = null;
+    nativeTrackIdRef.current = null;
+  }, []);
+  const playLocalTrack = useCallback(async (track: Track, startPlaying = true) => {
+    if (!track.localUri) return false;
+    try {
+      setLocalPlaybackError(null);
+      stopNativePlayer();
+      const player = createAudioPlayer(track.localUri, { updateInterval: 250, keepAudioSessionActive: true });
+      nativePlayerRef.current = player;
+      nativeTrackIdRef.current = track.id;
+      player.addListener("playbackStatusUpdate", (status) => handleNativeStatus(track.id, status));
+      player.setActiveForLockScreen(true, { title: track.title, artist: track.artist, albumTitle: track.album });
+      setCurrentTrack(track);
+      setProgress(0);
+      setPlaybackSeconds(0);
+      setPlaybackDuration(0);
+      setIsPlaying(startPlaying);
+      if (startPlaying) player.play();
+      return true;
+    } catch {
+      setIsPlaying(false);
+      setLocalPlaybackError("Sphynx could not play this local file. Try MP3, AAC, M4A, or WAV.");
+      return false;
+    }
+  }, [handleNativeStatus, stopNativePlayer]);
+  const setPlaybackProgress = useCallback((nextProgress: number) => {
+    const bounded = clamp(nextProgress, 0, 1);
+    setProgress(bounded);
+    const player = nativePlayerRef.current;
+    const duration = player?.duration || playbackDuration;
+    if (currentTrack.localUri && player && duration > 0) {
+      void player.seekTo(duration * bounded).catch(() => setLocalPlaybackError("Sphynx could not seek in this file."));
+    }
+  }, [currentTrack.localUri, playbackDuration]);
   const playTrack = useCallback((track: Track) => {
+    if (track.localUri) {
+      void playLocalTrack(track, true);
+      return;
+    }
+    stopNativePlayer();
+    setLocalPlaybackError(null);
     setCurrentTrack(track);
     setProgress(0);
+    setPlaybackSeconds(0);
+    setPlaybackDuration(0);
     setIsPlaying(true);
-  }, []);
-  const togglePlayback = useCallback(() => setIsPlaying((value) => !value), []);
+  }, [playLocalTrack, stopNativePlayer]);
+  const togglePlayback = useCallback(() => {
+    const player = nativePlayerRef.current;
+    if (currentTrack.localUri) {
+      if (!player || nativeTrackIdRef.current !== currentTrack.id) {
+        void playLocalTrack(currentTrack, true);
+        return;
+      }
+      if (player.playing) {
+        player.pause();
+        setIsPlaying(false);
+      } else {
+        if (player.duration > 0 && player.currentTime >= player.duration) {
+          void player.seekTo(0);
+        }
+        player.play();
+        setIsPlaying(true);
+      }
+      return;
+    }
+    setIsPlaying((value) => !value);
+  }, [currentTrack, playLocalTrack]);
   const skip = useCallback(
     (direction: "next" | "previous") => {
-      const currentIndex = libraryTracks.findIndex((track) => track.id === currentTrack.id);
-      const nextIndex = nextTrackIndex(currentIndex, libraryTracks.length, direction);
-      setCurrentTrack(libraryTracks[nextIndex]);
-      setProgress(0);
+      const fullQueue = [...libraryTracks, ...importedTracks];
+      const currentIndex = fullQueue.findIndex((track) => track.id === currentTrack.id);
+      const nextIndex = nextTrackIndex(currentIndex, fullQueue.length, direction);
+      playTrack(fullQueue[nextIndex]);
     },
-    [currentTrack.id],
+    [currentTrack.id, importedTracks, playTrack],
   );
+
+  const tracks = useMemo(() => [...importedTracks, ...libraryTracks], [importedTracks]);
 
   const value = useMemo<SphynxContextValue>(
     () => ({
@@ -281,9 +444,14 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       themeId,
       setThemeId,
       currentTrack,
-      queue: libraryTracks,
+      queue: tracks,
+      tracks,
+      importedTracks,
       isPlaying,
       progress,
+      playbackSeconds,
+      playbackDuration,
+      localPlaybackError,
       setProgress: setPlaybackProgress,
       togglePlayback,
       playTrack,
@@ -292,8 +460,11 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       setSound,
       connected,
       setConnected,
+      isImporting,
+      localImportMessage,
+      importLocalTracks,
     }),
-    [connected, currentTrack, isPlaying, playTrack, progress, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback],
+    [connected, currentTrack, importLocalTracks, importedTracks, isImporting, isPlaying, localImportMessage, localPlaybackError, playTrack, playbackDuration, playbackSeconds, progress, setConnected, setPlaybackProgress, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks],
   );
 
   return <SphynxContext.Provider value={value}>{children}</SphynxContext.Provider>;
