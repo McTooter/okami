@@ -19,3 +19,5 @@
 - [x] Add persistent headphone-specific preset groups with create, select, rename, and delete actions.
 - [x] Make EQ preset creation, display, application, and overwrite behavior scoped to the selected headphone group.
 - [x] Extend portable audio-settings export and deterministic tests to retain headphone-group assignments.
+- [x] Add a compact Now Playing listening-device switcher with selected-group feedback and tactile switching.
+- [x] Preserve current playback and validate that device switching updates audio-control context without queue disruption.

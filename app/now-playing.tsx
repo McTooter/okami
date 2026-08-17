@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
-import { GestureResponderEvent, Pressable, StyleSheet, Text, View } from "react-native";
+import { GestureResponderEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { AlbumArt } from "@/components/sphynx/album-art";
 import { SourceBadge } from "@/components/sphynx/controls";
@@ -46,7 +46,8 @@ function durationSeconds(duration: string) {
 
 export default function NowPlayingScreen() {
   const router = useRouter();
-  const { theme, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip } = useSphynx();
+  const { theme, currentTrack, isPlaying, localPlaybackError, togglePlayback, skip, headphoneGroups, activeHeadphoneGroupId, setActiveHeadphoneGroupId } = useSphynx();
+  const activeGroup = headphoneGroups.find((group) => group.id === activeHeadphoneGroupId) ?? headphoneGroups[0];
 
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]} containerStyle={{ backgroundColor: theme.background }} style={{ backgroundColor: theme.background }}>
@@ -99,6 +100,32 @@ export default function NowPlayingScreen() {
           </Pressable>
         </View>
 
+        <View style={[styles.deviceSwitcher, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View style={styles.deviceLabelRow}>
+            <View style={styles.deviceLabel}>
+              <Ionicons name="headset-outline" size={15} color={theme.accent} />
+              <Text style={[styles.deviceEyebrow, { color: theme.muted }]}>LISTENING ON</Text>
+            </View>
+            <Text numberOfLines={1} style={[styles.activeDeviceName, { color: theme.foreground }]}>{activeGroup.name}</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.deviceChipRow}>
+            {headphoneGroups.map((group) => {
+              const selected = group.id === activeHeadphoneGroupId;
+              return (
+                <Pressable
+                  key={group.id}
+                  accessibilityLabel={`Switch listening device to ${group.name}`}
+                  onPress={() => { haptic.selection(); setActiveHeadphoneGroupId(group.id); }}
+                  style={({ pressed }) => [styles.deviceChip, { borderColor: selected ? theme.accent : theme.border, backgroundColor: selected ? theme.accent : theme.raised }, pressed && styles.pressed]}
+                >
+                  {selected ? <Ionicons name="checkmark" size={12} color={theme.accentInk} /> : null}
+                  <Text numberOfLines={1} style={[styles.deviceChipText, { color: selected ? theme.accentInk : theme.foreground }]}>{group.name}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         <View style={[styles.toolLine, { borderTopColor: theme.border }]}>
           <Pressable onPress={() => router.push("/sound-lab" as never)} style={({ pressed }) => [styles.toolItem, pressed && styles.pressed]}>
             <Ionicons name="options-outline" size={18} color={theme.accent} />
@@ -144,6 +171,14 @@ const styles = StyleSheet.create({
   minorControl: { width: 38, height: 44, alignItems: "center", justifyContent: "center" },
   majorControl: { width: 50, height: 52, alignItems: "center", justifyContent: "center" },
   playControl: { width: 66, height: 66, borderRadius: 33, alignItems: "center", justifyContent: "center" },
+  deviceSwitcher: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 10, overflow: "hidden" },
+  deviceLabelRow: { minHeight: 18, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, gap: 12 },
+  deviceLabel: { flexDirection: "row", alignItems: "center", gap: 5 },
+  deviceEyebrow: { fontSize: 8, fontWeight: "800", letterSpacing: 0.9 },
+  activeDeviceName: { flex: 1, minWidth: 0, textAlign: "right", fontSize: 10, fontWeight: "800" },
+  deviceChipRow: { paddingHorizontal: 12, paddingTop: 9, gap: 7 },
+  deviceChip: { minHeight: 29, maxWidth: 150, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 4 },
+  deviceChipText: { flexShrink: 1, fontSize: 10, fontWeight: "800" },
   toolLine: { borderTopWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingTop: 12 },
   toolItem: { flex: 1, minHeight: 36, flexDirection: "row", gap: 7, alignItems: "center", justifyContent: "center" },
   toolText: { fontSize: 12, fontWeight: "700" },
