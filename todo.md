@@ -75,3 +75,5 @@
 - [x] Replace the initial Okami icon with a more distinctive, premium black rising-sun mark on white.
 - [x] Validate the refined icon at launcher scale and install it across all branding asset locations.
 - [x] Replace the single-ray treatment with a balanced, intentional multi-ray rising-sun mark.
+- [x] Replace the legacy Sphynx Library header label with Okami.
+- [x] Validate the visible Library header branding and save a checkpoint.

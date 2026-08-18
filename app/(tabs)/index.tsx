@@ -54,7 +54,7 @@ export default function LibraryScreen() {
           <View>
             <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(340).easing(Easing.out(Easing.cubic))} style={[styles.topLine, heroParallaxStyle]}>
               <View>
-                <Text style={[styles.kicker, { color: theme.accent }]}>SPHYNX / LIBRARY</Text>
+                <Text style={[styles.kicker, { color: theme.accent }]}>OKAMI</Text>
                 <Text style={[styles.pageTitle, { color: theme.foreground }]}>Your music.</Text>
               </View>
               <MotionPressable accessibilityLabel="Open search" onPress={() => router.navigate("/search" as never)} emphasis="compact" style={[styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
