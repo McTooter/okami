@@ -77,3 +77,5 @@
 - [x] Replace the single-ray treatment with a balanced, intentional multi-ray rising-sun mark.
 - [x] Replace the legacy Sphynx Library header label with Okami.
 - [x] Validate the visible Library header branding and save a checkpoint.
+- [x] Replace every remaining user-facing Sphynx mention in Sound Lab with Okami.
+- [x] Validate Sound Lab branding and save a checkpoint.

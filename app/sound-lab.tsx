@@ -254,7 +254,7 @@ export default function SoundLabScreen() {
           <Ionicons name={sound.preamp > 3 ? "warning-outline" : "shield-checkmark-outline"} size={20} color={sound.preamp > 3 ? theme.danger : theme.accent} />
           <View style={styles.safetyCopy}>
             <Text style={[styles.safetyTitle, { color: theme.foreground }]}>{sound.preamp > 3 ? "High gain can clip." : "Gain protection is active."}</Text>
-            <Text style={[styles.safetyNote, { color: theme.muted }]}>{sound.preamp > 3 ? "Lower the preamp or keep the limiter on to preserve headroom." : "Limiter catches peak overload on eligible Sphynx/local playback."}</Text>
+            <Text style={[styles.safetyNote, { color: theme.muted }]}>{sound.preamp > 3 ? "Lower the preamp or keep the limiter on to preserve headroom." : "Limiter catches peak overload on eligible Okami/local playback."}</Text>
           </View>
           <Pressable onPress={() => { haptic.medium(); setSound({ limiter: !sound.limiter }); }} style={({ pressed }) => [styles.toggle, { backgroundColor: sound.limiter ? theme.accent : theme.border }, pressed && styles.pressed]}>
             <View style={[styles.toggleDot, { backgroundColor: sound.limiter ? theme.accentInk : theme.muted, alignSelf: sound.limiter ? "flex-end" : "flex-start" }]} />
@@ -266,7 +266,7 @@ export default function SoundLabScreen() {
           <View style={[styles.check, { backgroundColor: sound.mono ? theme.accent : theme.raised, borderColor: sound.mono ? theme.accent : theme.border }]}>{sound.mono ? <Ionicons name="checkmark" size={15} color={theme.accentInk} /> : null}</View>
         </Pressable>
 
-        <Pressable accessibilityLabel="Export Sphynx audio settings" onPress={() => void shareSettings()} style={({ pressed }) => [styles.exportCard, { backgroundColor: theme.raised, borderColor: theme.border }, pressed && styles.pressed]}>
+        <Pressable accessibilityLabel="Export Okami audio settings" onPress={() => void shareSettings()} style={({ pressed }) => [styles.exportCard, { backgroundColor: theme.raised, borderColor: theme.border }, pressed && styles.pressed]}>
           <View style={[styles.exportIcon, { backgroundColor: theme.accent }]}><Ionicons name="share-outline" size={18} color={theme.accentInk} /></View>
           <View style={styles.exportCopy}>
             <Text style={[styles.exportTitle, { color: theme.foreground }]}>Export audio settings</Text>
