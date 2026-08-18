@@ -85,3 +85,9 @@
 - [x] Validate local-import branding and save a checkpoint.
 - [x] Diagnose why the active preview does not display the updated Okami logo.
 - [x] Correct active logo asset references and validate the visible logo update before checkpointing.
+- [x] Inspect available GitHub connectivity and identify the target repository for the Okami source upload.
+- [ ] Prepare and upload the validated Okami source project to the user-approved GitHub repository.
+- [ ] Document the external IPA packaging handoff after the repository upload.
+- [ ] Create a new public Okami GitHub repository.
+- [x] Add a GitHub Actions iOS workflow that produces an IPA artifact from the Okami source.
+- [ ] Validate the public-source workflow and provide the IPA artifact retrieval path.

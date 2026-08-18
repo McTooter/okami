@@ -1,0 +1,65 @@
+name: Package Okami iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  package-ipa:
+    name: Validate and package iOS IPA
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Set up Expo Application Services
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate source
+        run: |
+          pnpm run check
+          pnpm run lint
+          pnpm test
+
+      - name: Create an internal-distribution iOS build
+        id: eas_build
+        run: |
+          eas build --platform ios --profile preview --non-interactive --wait --json > eas-build.json
+          BUILD_ID="$(node -e 'const build = require("./eas-build.json"); console.log((Array.isArray(build) ? build[0] : build).id)')"
+          test -n "$BUILD_ID"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Download generated IPA
+        run: eas build:download --build-id "${{ steps.eas_build.outputs.build_id }}" --non-interactive
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: okami-ios-ipa
+          path: "*.ipa"
+          if-no-files-found: error
+          retention-days: 14
