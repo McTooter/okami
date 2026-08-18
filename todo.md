@@ -91,3 +91,5 @@
 - [x] Create a new public Okami GitHub repository.
 - [x] Add a GitHub Actions iOS workflow that produces an IPA artifact from the Okami source.
 - [x] Validate the public-source workflow and provide the IPA artifact retrieval path.
+- [x] Research current no-paid-Apple-account options for generating or installing an Okami IPA.
+- [x] Document the verified constraints and viable next steps for personal iPhone testing.
