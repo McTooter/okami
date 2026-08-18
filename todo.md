@@ -96,8 +96,8 @@
 - [x] Verify SideStore requirements for installing a GitHub-generated unsigned IPA with a free Apple ID.
 - [x] Add a macOS GitHub Actions workflow that packages an unsigned Okami IPA for SideStore.
 - [x] Document SideStore artifact retrieval and personal-device installation steps.
-- [ ] Validate, checkpoint, and publish the SideStore packaging update to the public repository.
+- [x] Validate, checkpoint, and publish the SideStore packaging update to the public repository.
 - [x] Add CocoaPods-required homepage metadata to project-local iOS modules so GitHub can generate the Okami native project.
-- [ ] Re-run the public SideStore IPA workflow and confirm the artifact uploads successfully.
+- [x] Re-run the public SideStore IPA workflow and confirm the artifact uploads successfully.
 - [x] Repair Expo SDK 54 module lifecycle and AVFoundation compatibility errors in the native DSP module uncovered by the GitHub iOS build.
-- [ ] Replace the unavailable iOS dynamics-processor Swift wrapper with the supported Audio Unit effect bridge and validate the SideStore IPA workflow.
+- [x] Replace the unavailable iOS dynamics-processor Swift wrapper with the supported Audio Unit effect bridge and validate the SideStore IPA workflow.
