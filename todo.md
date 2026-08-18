@@ -100,3 +100,4 @@
 - [x] Add CocoaPods-required homepage metadata to project-local iOS modules so GitHub can generate the Okami native project.
 - [ ] Re-run the public SideStore IPA workflow and confirm the artifact uploads successfully.
 - [x] Repair Expo SDK 54 module lifecycle and AVFoundation compatibility errors in the native DSP module uncovered by the GitHub iOS build.
+- [ ] Replace the unavailable iOS dynamics-processor Swift wrapper with the supported Audio Unit effect bridge and validate the SideStore IPA workflow.

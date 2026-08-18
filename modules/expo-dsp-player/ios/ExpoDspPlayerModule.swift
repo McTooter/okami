@@ -1,13 +1,22 @@
 import AVFAudio
+import AudioToolbox
 import ExpoModulesCore
-import AVFoundation
 
 public final class ExpoDspPlayerModule: Module {
   private let engine = AVAudioEngine()
   private let playerNode = AVAudioPlayerNode()
   private let timePitch = AVAudioUnitTimePitch()
   private let equalizer = AVAudioUnitEQ(numberOfBands: 5)
-  private let dynamics = AVAudioUnitDynamicsProcessor()
+  private let dynamics: AVAudioUnitEffect = {
+    let component = AudioComponentDescription(
+      componentType: kAudioUnitType_Effect,
+      componentSubType: kAudioUnitSubType_DynamicsProcessor,
+      componentManufacturer: kAudioUnitManufacturer_Apple,
+      componentFlags: 0,
+      componentFlagsMask: 0
+    )
+    return AVAudioUnitEffect(audioComponentDescription: component)
+  }()
   private let frequencies: [Float] = [60, 230, 910, 3600, 14000]
   private let statusQueue = DispatchQueue(label: "im.sphynx.dsp.status")
   private var statusTimer: DispatchSourceTimer?
@@ -130,28 +139,18 @@ public final class ExpoDspPlayerModule: Module {
     dynamics.bypass = !(limiter || compressor || loudnessEnabled)
 
     if limiter {
-      dynamics.threshold = -4
-      dynamics.headRoom = 1
-      dynamics.compressionRatio = 8
-      dynamics.attackTime = 0.001
-      dynamics.releaseTime = 0.08
-      dynamics.masterGain = 0
+      configureDynamics(threshold: -4, headRoom: 1, attack: 0.001, release: 0.08, overallGain: 0)
     } else if loudnessEnabled {
-      dynamics.threshold = loudnessMode == "track" ? -20 : -18
-      dynamics.headRoom = 5
-      dynamics.compressionRatio = compressor ? 2.6 : 1.6
-      dynamics.attackTime = 0.01
-      dynamics.releaseTime = 0.18
-      dynamics.masterGain = loudnessMode == "track" ? 3 : 1.5
+      configureDynamics(
+        threshold: loudnessMode == "track" ? -20 : -18,
+        headRoom: compressor ? 3.5 : 5,
+        attack: 0.01,
+        release: 0.18,
+        overallGain: loudnessMode == "track" ? 3 : 1.5
+      )
     } else if compressor {
-      dynamics.threshold = -18
-      dynamics.headRoom = 4
-      dynamics.compressionRatio = 2.4
-      dynamics.attackTime = 0.01
-      dynamics.releaseTime = 0.15
-      dynamics.masterGain = 0
+      configureDynamics(threshold: -18, headRoom: 4, attack: 0.01, release: 0.15, overallGain: 0)
     }
-    dynamics.inputGain = 0
   }
 
   private func play() throws {
@@ -263,6 +262,34 @@ public final class ExpoDspPlayerModule: Module {
     return powf(10, value / 20)
   }
 
+  private func configureDynamics(
+    threshold: Float,
+    headRoom: Float,
+    attack: Float,
+    release: Float,
+    overallGain: Float
+  ) {
+    setDynamicsParameter(kDynamicsProcessorParam_Threshold, value: threshold)
+    setDynamicsParameter(kDynamicsProcessorParam_HeadRoom, value: headRoom)
+    setDynamicsParameter(kDynamicsProcessorParam_AttackTime, value: attack)
+    setDynamicsParameter(kDynamicsProcessorParam_ReleaseTime, value: release)
+    setDynamicsParameter(kDynamicsProcessorParam_OverallGain, value: overallGain)
+  }
+
+  private func setDynamicsParameter(_ parameter: AudioUnitParameterID, value: Float) {
+    let status = AudioUnitSetParameter(
+      dynamics.audioUnit,
+      parameter,
+      kAudioUnitScope_Global,
+      0,
+      AudioUnitParameterValue(value),
+      0
+    )
+    if status != noErr {
+      NSLog("Okami DSP could not set dynamics parameter %u (status %d).", parameter, status)
+    }
+  }
+
   private static func emptyStatus() -> [String: Any] {
     return ["currentTime": 0, "duration": 0, "playing": false, "engineActive": false, "processingActive": false]
   }
@@ -274,8 +301,8 @@ private enum DspPlayerError: Error, LocalizedError {
 
   var errorDescription: String? {
     switch self {
-    case .noTrack: return "No local track has been loaded into the Sphynx DSP player."
-    case .unavailable: return "The Sphynx DSP player is unavailable."
+    case .noTrack: return "No local track has been loaded into the Okami DSP player."
+    case .unavailable: return "The Okami DSP player is unavailable."
     }
   }
 }
