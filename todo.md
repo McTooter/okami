@@ -83,3 +83,5 @@
 - [x] Validate Theme Atelier branding and save a checkpoint.
 - [x] Replace user-facing local-import error messages that use the Sphynx name with Okami.
 - [x] Validate local-import branding and save a checkpoint.
+- [x] Diagnose why the active preview does not display the updated Okami logo.
+- [x] Correct active logo asset references and validate the visible logo update before checkpointing.

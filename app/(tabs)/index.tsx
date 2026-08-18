@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Image, StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, FadeInDown, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { AnimatedAlbumArt } from "@/components/sphynx/animated-album-art";
@@ -54,7 +54,10 @@ export default function LibraryScreen() {
           <View>
             <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(340).easing(Easing.out(Easing.cubic))} style={[styles.topLine, heroParallaxStyle]}>
               <View>
-                <Text style={[styles.kicker, { color: theme.accent }]}>OKAMI</Text>
+                <View style={styles.brandRow}>
+                  <Image accessibilityLabel="Okami rising-sun logo" source={require("../../assets/images/icon.png")} style={styles.brandMark} />
+                  <Text style={[styles.kicker, { color: theme.accent }]}>OKAMI</Text>
+                </View>
                 <Text style={[styles.pageTitle, { color: theme.foreground }]}>Your music.</Text>
               </View>
               <MotionPressable accessibilityLabel="Open search" onPress={() => router.navigate("/search" as never)} emphasis="compact" style={[styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -124,7 +127,9 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   list: { paddingHorizontal: 20, paddingTop: 18 },
   topLine: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 },
-  kicker: { fontSize: 10, letterSpacing: 1.5, fontWeight: "800", marginBottom: 5 },
+  brandRow: { flexDirection: "row", alignItems: "center", height: 27, marginBottom: 5, gap: 3 },
+  brandMark: { width: 27, height: 27, borderRadius: 7 },
+  kicker: { fontSize: 10, letterSpacing: 1.5, fontWeight: "800" },
   pageTitle: { fontSize: 31, lineHeight: 37, letterSpacing: -1.15, fontWeight: "800" },
   iconButton: { width: 44, height: 44, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
   nowCard: { borderRadius: 23, borderWidth: StyleSheet.hairlineWidth, padding: 14, marginBottom: 16 },
