@@ -9,7 +9,7 @@ import { buildDspPlaybackConfiguration } from "@/lib/dsp-player-core";
 import { applyQueueOrder, moveQueueId } from "@/lib/queue-core";
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
 import { pickLocalMusicFiles } from "@/lib/local-music";
-import { MAX_PROFILE_PINNED_ALBUMS, mergeListeningProfiles, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfileCustomizations, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders, type ListeningProfile, type ListeningProfileCustomization, type ListeningProfileId } from "@/lib/listening-profile-core";
+import { MAX_PROFILE_PINNED_ALBUMS, mergeListeningProfiles, movePinnedTrackId, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfileCustomizations, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders, reorderPinnedTrackIds, type ListeningProfile, type ListeningProfileCustomization, type ListeningProfileId } from "@/lib/listening-profile-core";
 import { addAudioRouteListener, audioRouteDetectionAvailable, getCurrentAudioRoute } from "@/modules/expo-audio-route";
 import { addDspPlaybackListener, dspPlaybackAvailable, getDspStatus, loadDspTrack, pauseDspTrack, playDspTrack, seekDspTrack, setDspConfiguration, unloadDspTrack, type DspPlaybackStatus } from "@/modules/expo-dsp-player";
 
@@ -221,6 +221,8 @@ type SphynxContextValue = {
   pinnedAlbums: Track[];
   isPinnedAlbum: (trackId: string) => boolean;
   togglePinnedAlbum: (trackId: string) => void;
+  reorderPinnedAlbums: (trackIds: string[]) => void;
+  movePinnedAlbum: (trackId: string, direction: "left" | "right") => void;
   currentTrack: Track;
   queue: Track[];
   tracks: Track[];
@@ -480,6 +482,18 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       return { ...current, [activeListeningProfileId]: nextIds };
     });
   }, [activeListeningProfileId, tracks]);
+  const reorderPinnedAlbums = useCallback((trackIds: string[]) => {
+    setProfilePinnedTrackIds((current) => {
+      const currentIds = current[activeListeningProfileId] ?? [];
+      return { ...current, [activeListeningProfileId]: reorderPinnedTrackIds(currentIds, trackIds) };
+    });
+  }, [activeListeningProfileId]);
+  const movePinnedAlbum = useCallback((trackId: string, direction: "left" | "right") => {
+    setProfilePinnedTrackIds((current) => {
+      const currentIds = current[activeListeningProfileId] ?? [];
+      return { ...current, [activeListeningProfileId]: movePinnedTrackId(currentIds, trackId, direction) };
+    });
+  }, [activeListeningProfileId]);
   const setSound = useCallback((patch: Partial<SoundSettings>) => {
     setSoundState((current) => normalizeAudioSettings({ ...current, ...patch, eq: patch.eq ?? current.eq }));
   }, []);
@@ -755,6 +769,8 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       pinnedAlbums,
       isPinnedAlbum,
       togglePinnedAlbum,
+      reorderPinnedAlbums,
+      movePinnedAlbum,
       currentTrack,
       queue,
       tracks,
@@ -794,7 +810,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       localImportMessage,
       importLocalTracks,
     }),
-    [activeEqPresetId, activeHeadphoneGroupId, activeListeningProfile, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, dspProcessingActive, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPinnedAlbum, isPlaying, listeningProfiles, localImportMessage, localPlaybackError, materialId, moveQueueTrack, overwriteActiveEqPreset, pinnedAlbums, playTrack, playbackDuration, playbackSeconds, profileQueueContinuity, progress, queue, renameHeadphoneGroup, reorderQueue, saveEqPreset, setActiveHeadphoneGroupId, setActiveListeningProfileId, setConnected, setMaterialId, setPlaybackProgress, setProfileQueueContinuity, setSound, setThemeId, skip, sound, themeId, togglePinnedAlbum, togglePlayback, tracks, updateListeningProfile],
+    [activeEqPresetId, activeHeadphoneGroupId, activeListeningProfile, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, dspProcessingActive, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPinnedAlbum, isPlaying, listeningProfiles, localImportMessage, localPlaybackError, materialId, movePinnedAlbum, moveQueueTrack, overwriteActiveEqPreset, pinnedAlbums, playTrack, playbackDuration, playbackSeconds, profileQueueContinuity, progress, queue, renameHeadphoneGroup, reorderPinnedAlbums, reorderQueue, saveEqPreset, setActiveHeadphoneGroupId, setActiveListeningProfileId, setConnected, setMaterialId, setPlaybackProgress, setProfileQueueContinuity, setSound, setThemeId, skip, sound, themeId, togglePinnedAlbum, togglePlayback, tracks, updateListeningProfile],
   );
 
   return <SphynxContext.Provider value={value}>{children}</SphynxContext.Provider>;

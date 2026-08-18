@@ -5,7 +5,7 @@ import { clampAdvancedAudioSettings, nativeVolumeFromTrim } from "../lib/advance
 import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
 import { buildDspPlaybackConfiguration, isDspProcessingEnabled } from "../lib/dsp-player-core";
 import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/listening-field-core";
-import { findListeningProfile, mergeListeningProfiles, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders } from "../lib/listening-profile-core";
+import { findListeningProfile, mergeListeningProfiles, movePinnedTrackId, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders, reorderPinnedTrackIds } from "../lib/listening-profile-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { applyQueueOrder, moveQueueId } from "../lib/queue-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
@@ -140,5 +140,12 @@ describe("Sphynx playback boundaries", () => {
   it("keeps pinned albums identity-scoped, unique, bounded, and safe to restore", () => {
     expect(normalizePinnedTrackIds(["a", "a", 2, "b", "c"])).toEqual(["a", "b", "c"]);
     expect(normalizeProfilePinnedTrackIds({ sora: ["a", "b"], "guest-session": ["c"], unknown: ["d"] })).toEqual({ sora: ["a", "b"], "guest-session": ["c"] });
+  });
+
+  it("persists only valid pinned drag results and supports accessible one-step reordering", () => {
+    expect(reorderPinnedTrackIds(["a", "b", "c"], ["c", "missing", "a", "a"])).toEqual(["c", "a", "b"]);
+    expect(movePinnedTrackId(["c", "a", "b"], "a", "left")).toEqual(["a", "c", "b"]);
+    expect(movePinnedTrackId(["c", "a", "b"], "c", "left")).toEqual(["c", "a", "b"]);
+    expect(movePinnedTrackId(["c", "a", "b"], "b", "right")).toEqual(["c", "a", "b"]);
   });
 });

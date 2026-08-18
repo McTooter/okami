@@ -77,3 +77,22 @@ export function normalizeProfilePinnedTrackIds(value: unknown): Partial<Record<L
     return result;
   }, {});
 }
+
+/** Retains the current pin membership while accepting an arbitrary drag result. */
+export function reorderPinnedTrackIds(current: readonly string[], proposed: readonly string[]): string[] {
+  const normalizedCurrent = normalizePinnedTrackIds(current);
+  const allowed = new Set(normalizedCurrent);
+  const proposedUnique = normalizePinnedTrackIds(proposed).filter((id) => allowed.has(id));
+  const missing = normalizedCurrent.filter((id) => !proposedUnique.includes(id));
+  return [...proposedUnique, ...missing];
+}
+
+export function movePinnedTrackId(ids: readonly string[], trackId: string, direction: "left" | "right"): string[] {
+  const current = normalizePinnedTrackIds(ids);
+  const index = current.indexOf(trackId);
+  const nextIndex = direction === "left" ? index - 1 : index + 1;
+  if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+  const next = [...current];
+  [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+  return next;
+}

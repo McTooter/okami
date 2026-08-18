@@ -162,3 +162,13 @@ The **Continue listening** rail is horizontal, card-led, and identity-specific. 
 | **Rail entrance** | Short staggered horizontal reveal, then static. | One opacity reveal; no horizontal offset. |
 
 The two material variants use original visual rules: Noir Pulse emphasizes decisive cutout markers and lateral cues, while Sunlit Signal uses warm, softly rounded broadcast stamps and upward resolution. No third-party names, layouts, visual assets, or animation sequences are reproduced.
+
+## Pinned-shelf ordering
+
+Pinned albums can be reordered inside the selected identity’s shelf through a long-press drag. The shelf retains the completed order immediately after drop, and ordering is scoped to the selected Listening Identity; it does not reorder the queue, source library, or another identity’s pins. A compact reorder handle starts the gesture without competing with direct album playback. For assistive and keyboard use, explicit move-left and move-right actions provide the same one-step reordering without a drag gesture.
+
+| Phase | Original Noir Pulse treatment | Original Sunlit Signal treatment | Reduced-motion behavior |
+|---|---|---|---|
+| **Lift** | A sharp lateral cutout cue and high-contrast drag handle. | A warm upward lift with a rounded broadcast stamp. | Cue-color and elevation change only. |
+| **Drag** | The active card receives a narrow side rail; siblings settle directly into place. | The active card receives a soft channel halo; siblings flow into place. | Position changes without scale or travel effects. |
+| **Drop** | A concise lateral landing marker confirms the saved order. | A brief upward settle confirms the saved order. | A 120 ms opacity and cue change confirms the saved order. |

@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import Animated, { Easing, FadeInDown } from "react-native-reanimated";
+import DraggableFlatList from "react-native-draggable-flatlist";
 
 import { AnimatedAlbumArt } from "@/components/sphynx/animated-album-art";
 import { MiniPlayer, SectionHeading } from "@/components/sphynx/controls";
@@ -36,6 +37,7 @@ export default function ProfileScreen() {
     isPinnedAlbum,
     listeningProfiles,
     material,
+    movePinnedAlbum,
     pinnedAlbums,
     playTrack,
     profileQueueContinuity,
@@ -47,6 +49,7 @@ export default function ProfileScreen() {
     theme,
     themeId,
     togglePinnedAlbum,
+    reorderPinnedAlbums,
     updateListeningProfile,
   } = useSphynx();
   const activeServices = Object.values(connected).filter(Boolean).length;
@@ -191,23 +194,65 @@ export default function ProfileScreen() {
         <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(270).duration(300).easing(Easing.out(Easing.cubic))}>
           <SectionHeading eyebrow="Private quick access" title="Pinned albums" />
           {pinnedAlbums.length ? (
-            <ScrollView horizontal decelerationRate="fast" snapToInterval={150} snapToAlignment="start" showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pinnedRail}>
-              {pinnedAlbums.map((track, index) => {
+            <DraggableFlatList
+              horizontal
+              activationDistance={8}
+              data={pinnedAlbums}
+              decelerationRate="fast"
+              dragItemOverflow
+              keyExtractor={(track) => track.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pinnedRail}
+              style={styles.pinnedDraggableList}
+              onDragEnd={({ data }) => { haptic.medium(); reorderPinnedAlbums(data.map((track) => track.id)); }}
+              renderItem={({ item: track, drag, isActive, getIndex }) => {
+                const index = getIndex() ?? 0;
                 const isCurrent = track.id === currentTrack.id;
+                const canMoveLeft = index > 0;
+                const canMoveRight = index < pinnedAlbums.length - 1;
+                const dragStyle = material.id === "noir-pulse" ? styles.draggingNoir : material.id === "sunlit-signal" ? styles.draggingSunlit : styles.draggingCore;
                 return (
-                  <Animated.View key={track.id} entering={motionReduced ? undefined : FadeInDown.delay(290 + index * 45).duration(260).easing(Easing.out(Easing.cubic))}>
-                    <View style={styles.albumCardShell}>
+                  <View style={[styles.albumCardShell, isActive && dragStyle]}>
+                    <MotionPressable
+                      accessibilityLabel={`Play pinned album ${track.title}`}
+                      accessibilityState={{ selected: isCurrent }}
+                      emphasis="primary"
+                      onPress={() => { haptic.light(); playTrack(track); }}
+                      style={[styles.continuationCard, styles.pinnedCard, { backgroundColor: theme.raised, borderColor: isActive ? cue : theme.border }]}
+                    >
+                      <AnimatedAlbumArt artwork={track.artwork} size={126} radius={15} accent={track.accent} active={isCurrent && isPlaying} motionReduced={motionReduced} />
+                      <Text numberOfLines={1} style={[styles.continuationTitle, { color: theme.foreground }]}>{track.album}</Text>
+                      <Text numberOfLines={1} style={[styles.continuationArtist, { color: theme.muted }]}>{track.artist}</Text>
+                      <View style={[styles.pinnedCue, { backgroundColor: cue }]}><Ionicons name="bookmark" size={10} color={material.cueInk ?? theme.accentInk} /></View>
+                    </MotionPressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Hold to reorder ${track.album}`}
+                      accessibilityHint="Drag left or right to change the pinned album order"
+                      delayLongPress={160}
+                      onLongPress={() => { haptic.medium(); drag(); }}
+                      style={[styles.pinnedDragHandle, { backgroundColor: material.id === "noir-pulse" ? cue : theme.surface, borderColor: cue }]}
+                    >
+                      <Ionicons name="reorder-three-outline" size={18} color={material.id === "noir-pulse" ? material.cueInk ?? theme.accentInk : cue} />
+                    </Pressable>
+                    <View style={styles.pinnedOrderControls}>
                       <MotionPressable
-                        accessibilityLabel={`Play pinned album ${track.title}`}
-                        accessibilityState={{ selected: isCurrent }}
-                        emphasis="primary"
-                        onPress={() => { haptic.light(); playTrack(track); }}
-                        style={[styles.continuationCard, styles.pinnedCard, { backgroundColor: theme.raised, borderColor: cue }]}
+                        accessibilityLabel={`Move ${track.album} left`}
+                        disabled={!canMoveLeft}
+                        emphasis="compact"
+                        onPress={() => { haptic.selection(); movePinnedAlbum(track.id, "left"); }}
+                        style={[styles.orderControl, { backgroundColor: theme.surface, borderColor: theme.border }, !canMoveLeft && styles.orderControlDisabled]}
                       >
-                        <AnimatedAlbumArt artwork={track.artwork} size={126} radius={15} accent={track.accent} active={isCurrent && isPlaying} motionReduced={motionReduced} />
-                        <Text numberOfLines={1} style={[styles.continuationTitle, { color: theme.foreground }]}>{track.album}</Text>
-                        <Text numberOfLines={1} style={[styles.continuationArtist, { color: theme.muted }]}>{track.artist}</Text>
-                        <View style={[styles.pinnedCue, { backgroundColor: cue }]}><Ionicons name="bookmark" size={10} color={material.cueInk ?? theme.accentInk} /></View>
+                        <Ionicons name="arrow-back" size={13} color={theme.foreground} />
+                      </MotionPressable>
+                      <MotionPressable
+                        accessibilityLabel={`Move ${track.album} right`}
+                        disabled={!canMoveRight}
+                        emphasis="compact"
+                        onPress={() => { haptic.selection(); movePinnedAlbum(track.id, "right"); }}
+                        style={[styles.orderControl, { backgroundColor: theme.surface, borderColor: theme.border }, !canMoveRight && styles.orderControlDisabled]}
+                      >
+                        <Ionicons name="arrow-forward" size={13} color={theme.foreground} />
                       </MotionPressable>
                       <MotionPressable
                         accessibilityLabel={`Unpin ${track.title}`}
@@ -218,10 +263,10 @@ export default function ProfileScreen() {
                         <Ionicons name="bookmark" size={13} color={material.cueInk ?? theme.accentInk} />
                       </MotionPressable>
                     </View>
-                  </Animated.View>
+                  </View>
                 );
-              })}
-            </ScrollView>
+              }}
+            />
           ) : (
             <View style={[styles.pinPrompt, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Ionicons name="bookmark-outline" size={18} color={cue} />
@@ -302,11 +347,19 @@ const styles = StyleSheet.create({
   tileMarker: { position: "absolute", left: 11, bottom: 0, height: 3, width: 48, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   continuationRail: { gap: 10, paddingBottom: 27, paddingRight: 20 },
   pinnedRail: { gap: 10, paddingBottom: 27, paddingRight: 20 },
+  pinnedDraggableList: { height: 213, marginBottom: 4 },
   albumCardShell: { width: 140, position: "relative" },
+  draggingCore: { opacity: 0.96, shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 13, shadowOffset: { width: 0, height: 7 }, elevation: 7 },
+  draggingNoir: { opacity: 0.98, borderLeftWidth: 3, borderLeftColor: "#FF294F", shadowColor: "#FF294F", shadowOpacity: 0.26, shadowRadius: 13, shadowOffset: { width: 7, height: 0 }, elevation: 7 },
+  draggingSunlit: { opacity: 0.98, borderBottomWidth: 3, borderBottomColor: "#F4A000", shadowColor: "#F4A000", shadowOpacity: 0.22, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 7 },
   continuationCard: { width: 140, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, padding: 7, overflow: "hidden" },
   pinnedCard: { borderTopWidth: 2 },
   pinControl: { position: "absolute", top: 12, left: 12, width: 25, height: 25, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
   pinnedCue: { position: "absolute", top: 12, right: 12, width: 23, height: 23, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  pinnedDragHandle: { position: "absolute", top: 11, right: 11, width: 27, height: 27, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  pinnedOrderControls: { flexDirection: "row", gap: 5, marginTop: 7, alignItems: "center" },
+  orderControl: { width: 31, height: 28, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  orderControlDisabled: { opacity: 0.35 },
   pinPrompt: { minHeight: 72, marginBottom: 27, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: 10, padding: 13 },
   pinPromptText: { flex: 1, fontSize: 11, lineHeight: 15, fontWeight: "600" },
   continuationTitle: { fontSize: 12, fontWeight: "800", marginTop: 9 },

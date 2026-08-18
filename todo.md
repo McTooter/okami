@@ -66,3 +66,6 @@
 - [x] Add persistent per-identity pinned albums with accessible pin and unpin controls.
 - [x] Build animated pinned-album cards with original Noir Pulse and Sunlit Signal hover and transition states.
 - [x] Validate pinned-album persistence, reduced-motion behavior, accessibility, TypeScript, linting, and deterministic tests.
+- [x] Define per-identity pinned-shelf drag ordering, accessible alternatives, and original material-specific motion rules.
+- [x] Implement persistent drag-and-drop reordering for pinned albums with accessible one-step reorder controls.
+- [x] Validate pinned-order persistence, drag motion safeguards, accessibility, TypeScript, linting, and deterministic tests.
