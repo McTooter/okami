@@ -1,5 +1,6 @@
 import AVFAudio
 import ExpoModulesCore
+import AVFoundation
 
 public final class ExpoDspPlayerModule: Module {
   private let engine = AVAudioEngine()
@@ -17,15 +18,14 @@ public final class ExpoDspPlayerModule: Module {
   private var repeatOne = false
   private var durationSeconds: Double = 0
 
-  public init() {
-    super.init()
-    configureGraph()
-  }
-
   public func definition() -> ModuleDefinition {
     Name("ExpoDspPlayer")
 
     Events("onPlaybackStatus")
+
+    OnCreate {
+      self.configureGraph()
+    }
 
     AsyncFunction("loadAsync") { [weak self] (uri: String, configuration: [String: Any]) -> [String: Any] in
       guard let self else { throw DspPlayerError.unavailable }
