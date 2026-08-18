@@ -62,3 +62,7 @@
 - [x] Add persistent editable identity names and avatar colors with accessible editing controls.
 - [x] Build a per-identity continue-listening rail with smooth, reduced-motion-aware interaction feedback.
 - [x] Validate profile editing, persistence, rail interactions, accessibility, TypeScript, linting, and deterministic tests.
+- [x] Define identity-scoped pinned-album behavior and original material-specific hover and transition rules.
+- [x] Add persistent per-identity pinned albums with accessible pin and unpin controls.
+- [x] Build animated pinned-album cards with original Noir Pulse and Sunlit Signal hover and transition states.
+- [x] Validate pinned-album persistence, reduced-motion behavior, accessibility, TypeScript, linting, and deterministic tests.

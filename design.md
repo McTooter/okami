@@ -120,6 +120,19 @@ Sphynx primary controls are not static. Each press has a clear down state, a sho
 
 Reduced Motion preserves all state changes through 100–150 ms opacity and color transitions, while removing transforms, continuous drift, and indicator travel.
 
+## Per-identity pinned albums
+
+Pinned albums are a local, identity-scoped shortlist of library tracks. Each Listening Identity keeps its own ordered set of track IDs, with a small maximum to preserve legibility. Pinning and unpinning never changes the active queue or source connection; it only changes the quick-access rail. A pin control exposes the state through `accessibilityState.selected`, and a pinned card opens the relevant track immediately.
+
+Pinned cards inherit the existing album-atmosphere treatment but add one interaction layer. **Noir Pulse** cards use a short lateral cutout cue and a sharp pinned marker; **Sunlit Signal** cards use a warm upward reveal and a rounded broadcast stamp. On pointer-capable devices, only the hovered card lifts by two points and grows to 1.02 scale. On touch, the shared press response supplies the depth effect. Reduced Motion retains the selection color and pin-state change while removing lift, scale, and directional travel.
+
+| State | Data behavior | Visual behavior |
+|---|---|---|
+| **Pinned** | The track ID is inserted once in the selected identity’s local pin list. | Cue marker appears; card settles in through the current material direction. |
+| **Unpinned** | The track ID is removed only from the selected identity’s pin list. | Marker fades; the card exits without queue changes. |
+| **Pinned album pressed** | The existing playback action selects that track. | Immediate shared press feedback with a compact active cue. |
+| **Pinned album hovered** | No data changes occur. | A 140 ms bounded lift and 1.02 scale on the single focused card. |
+
 ## Album motion and Listening Identity
 
 Album motion begins from the complete static cover, then adds a contained **cover atmosphere**: a translucent gradient wash, an offset signal frame, and one material-tuned parallax plane. Playback is the only trigger for continuous movement; pausing settles the cover into its composed static frame. Library thumbnails receive a one-time card reveal and selected-track cue, Mini Player receives a small active halo, and Now Playing receives the full cover atmosphere behind the existing Listening Field. The system never replaces an album cover with unrelated media, flashing, or fabricated artist imagery.

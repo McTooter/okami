@@ -33,8 +33,10 @@ export default function ProfileScreen() {
     connected,
     currentTrack,
     isPlaying,
+    isPinnedAlbum,
     listeningProfiles,
     material,
+    pinnedAlbums,
     playTrack,
     profileQueueContinuity,
     progress,
@@ -44,6 +46,7 @@ export default function ProfileScreen() {
     sound,
     theme,
     themeId,
+    togglePinnedAlbum,
     updateListeningProfile,
   } = useSphynx();
   const activeServices = Object.values(connected).filter(Boolean).length;
@@ -155,23 +158,76 @@ export default function ProfileScreen() {
               const isCurrent = track.id === currentTrack.id;
               return (
                 <Animated.View key={track.id} entering={motionReduced ? undefined : FadeInDown.delay(245 + index * 45).duration(260).easing(Easing.out(Easing.cubic))}>
-                  <MotionPressable
-                    accessibilityLabel={`Play ${track.title} from ${activeListeningProfile.name}'s continuation rail`}
-                    accessibilityState={{ selected: isCurrent }}
-                    emphasis="primary"
-                    onPress={() => { haptic.light(); playTrack(track); }}
-                    style={[styles.continuationCard, { backgroundColor: theme.surface, borderColor: isCurrent ? cue : theme.border }]}
-                  >
-                    <AnimatedAlbumArt artwork={track.artwork} size={126} radius={15} accent={track.accent} active={isCurrent && isPlaying} motionReduced={motionReduced} />
-                    <Text numberOfLines={1} style={[styles.continuationTitle, { color: theme.foreground }]}>{track.title}</Text>
-                    <Text numberOfLines={1} style={[styles.continuationArtist, { color: theme.muted }]}>{track.artist}</Text>
-                    <View style={[styles.progressTrack, { backgroundColor: theme.border }]}><View style={[styles.progressFill, { width: `${isCurrent ? Math.round(progress * 100) : 0}%`, backgroundColor: cue }]} /></View>
-                    {isCurrent ? <View style={[styles.nowPip, { backgroundColor: cue }]}><Ionicons name="volume-high" size={11} color={material.cueInk ?? theme.accentInk} /></View> : null}
-                  </MotionPressable>
+                  <View style={styles.albumCardShell}>
+                    <MotionPressable
+                      accessibilityLabel={`Play ${track.title} from ${activeListeningProfile.name}'s continuation rail`}
+                      accessibilityState={{ selected: isCurrent }}
+                      emphasis="primary"
+                      onPress={() => { haptic.light(); playTrack(track); }}
+                      style={[styles.continuationCard, { backgroundColor: theme.surface, borderColor: isCurrent ? cue : theme.border }]}
+                    >
+                      <AnimatedAlbumArt artwork={track.artwork} size={126} radius={15} accent={track.accent} active={isCurrent && isPlaying} motionReduced={motionReduced} />
+                      <Text numberOfLines={1} style={[styles.continuationTitle, { color: theme.foreground }]}>{track.title}</Text>
+                      <Text numberOfLines={1} style={[styles.continuationArtist, { color: theme.muted }]}>{track.artist}</Text>
+                      <View style={[styles.progressTrack, { backgroundColor: theme.border }]}><View style={[styles.progressFill, { width: `${isCurrent ? Math.round(progress * 100) : 0}%`, backgroundColor: cue }]} /></View>
+                      {isCurrent ? <View style={[styles.nowPip, { backgroundColor: cue }]}><Ionicons name="volume-high" size={11} color={material.cueInk ?? theme.accentInk} /></View> : null}
+                    </MotionPressable>
+                    <MotionPressable
+                      accessibilityLabel={`${isPinnedAlbum(track.id) ? "Unpin" : "Pin"} ${track.title} for ${activeListeningProfile.name}`}
+                      accessibilityState={{ selected: isPinnedAlbum(track.id) }}
+                      emphasis="compact"
+                      onPress={() => { haptic.selection(); togglePinnedAlbum(track.id); }}
+                      style={[styles.pinControl, { backgroundColor: isPinnedAlbum(track.id) ? cue : theme.raised, borderColor: isPinnedAlbum(track.id) ? cue : theme.border }]}
+                    >
+                      <Ionicons name={isPinnedAlbum(track.id) ? "bookmark" : "bookmark-outline"} size={13} color={isPinnedAlbum(track.id) ? material.cueInk ?? theme.accentInk : theme.foreground} />
+                    </MotionPressable>
+                  </View>
                 </Animated.View>
               );
             })}
           </ScrollView>
+        </Animated.View>
+
+        <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(270).duration(300).easing(Easing.out(Easing.cubic))}>
+          <SectionHeading eyebrow="Private quick access" title="Pinned albums" />
+          {pinnedAlbums.length ? (
+            <ScrollView horizontal decelerationRate="fast" snapToInterval={150} snapToAlignment="start" showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pinnedRail}>
+              {pinnedAlbums.map((track, index) => {
+                const isCurrent = track.id === currentTrack.id;
+                return (
+                  <Animated.View key={track.id} entering={motionReduced ? undefined : FadeInDown.delay(290 + index * 45).duration(260).easing(Easing.out(Easing.cubic))}>
+                    <View style={styles.albumCardShell}>
+                      <MotionPressable
+                        accessibilityLabel={`Play pinned album ${track.title}`}
+                        accessibilityState={{ selected: isCurrent }}
+                        emphasis="primary"
+                        onPress={() => { haptic.light(); playTrack(track); }}
+                        style={[styles.continuationCard, styles.pinnedCard, { backgroundColor: theme.raised, borderColor: cue }]}
+                      >
+                        <AnimatedAlbumArt artwork={track.artwork} size={126} radius={15} accent={track.accent} active={isCurrent && isPlaying} motionReduced={motionReduced} />
+                        <Text numberOfLines={1} style={[styles.continuationTitle, { color: theme.foreground }]}>{track.album}</Text>
+                        <Text numberOfLines={1} style={[styles.continuationArtist, { color: theme.muted }]}>{track.artist}</Text>
+                        <View style={[styles.pinnedCue, { backgroundColor: cue }]}><Ionicons name="bookmark" size={10} color={material.cueInk ?? theme.accentInk} /></View>
+                      </MotionPressable>
+                      <MotionPressable
+                        accessibilityLabel={`Unpin ${track.title}`}
+                        emphasis="compact"
+                        onPress={() => { haptic.selection(); togglePinnedAlbum(track.id); }}
+                        style={[styles.pinControl, { backgroundColor: cue, borderColor: cue }]}
+                      >
+                        <Ionicons name="bookmark" size={13} color={material.cueInk ?? theme.accentInk} />
+                      </MotionPressable>
+                    </View>
+                  </Animated.View>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <View style={[styles.pinPrompt, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Ionicons name="bookmark-outline" size={18} color={cue} />
+              <Text style={[styles.pinPromptText, { color: theme.muted }]}>Pin albums from Continue listening to keep a private quick-access shelf for {activeListeningProfile.name}.</Text>
+            </View>
+          )}
         </Animated.View>
 
         <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(285).duration(310).easing(Easing.out(Easing.cubic))}>
@@ -245,7 +301,14 @@ const styles = StyleSheet.create({
   tileNote: { fontSize: 10, lineHeight: 14, fontWeight: "600" },
   tileMarker: { position: "absolute", left: 11, bottom: 0, height: 3, width: 48, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   continuationRail: { gap: 10, paddingBottom: 27, paddingRight: 20 },
+  pinnedRail: { gap: 10, paddingBottom: 27, paddingRight: 20 },
+  albumCardShell: { width: 140, position: "relative" },
   continuationCard: { width: 140, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, padding: 7, overflow: "hidden" },
+  pinnedCard: { borderTopWidth: 2 },
+  pinControl: { position: "absolute", top: 12, left: 12, width: 25, height: 25, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  pinnedCue: { position: "absolute", top: 12, right: 12, width: 23, height: 23, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  pinPrompt: { minHeight: 72, marginBottom: 27, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: 10, padding: 13 },
+  pinPromptText: { flex: 1, fontSize: 11, lineHeight: 15, fontWeight: "600" },
   continuationTitle: { fontSize: 12, fontWeight: "800", marginTop: 9 },
   continuationArtist: { fontSize: 10, fontWeight: "600", marginTop: 2 },
   progressTrack: { height: 3, borderRadius: 99, marginTop: 9, overflow: "hidden" },

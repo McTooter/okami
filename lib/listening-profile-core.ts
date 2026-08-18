@@ -18,6 +18,7 @@ export type ListeningProfileCustomization = {
 };
 
 export const PROFILE_AVATAR_COLORS = ["#CAFF4A", "#F05A47", "#E7A628", "#8DA8FF", "#EE8CF5", "#71D6D1"] as const;
+export const MAX_PROFILE_PINNED_ALBUMS = 8;
 
 export const LISTENING_PROFILES: readonly ListeningProfile[] = [
   { id: "sora", name: "Sora", descriptor: "Primary desk", taste: "Slow-glow electronica", note: "Keeps the current playback queue close.", cue: "#CAFF4A", artwork: "interval" },
@@ -57,6 +58,22 @@ export function normalizeProfileQueueOrders(value: unknown): Partial<Record<List
   return LISTENING_PROFILES.reduce<Partial<Record<ListeningProfileId, string[]>>>((result, profile) => {
     const order = input[profile.id];
     if (Array.isArray(order)) result[profile.id] = order.filter((id): id is string => typeof id === "string");
+    return result;
+  }, {});
+}
+
+export function normalizePinnedTrackIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const ids = value.filter((id): id is string => typeof id === "string" && id.length > 0);
+  return [...new Set(ids)].slice(0, MAX_PROFILE_PINNED_ALBUMS);
+}
+
+export function normalizeProfilePinnedTrackIds(value: unknown): Partial<Record<ListeningProfileId, string[]>> {
+  if (!value || typeof value !== "object") return {};
+  const input = value as Record<string, unknown>;
+  return LISTENING_PROFILES.reduce<Partial<Record<ListeningProfileId, string[]>>>((result, profile) => {
+    const ids = normalizePinnedTrackIds(input[profile.id]);
+    if (ids.length) result[profile.id] = ids;
     return result;
   }, {});
 }

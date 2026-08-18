@@ -9,7 +9,7 @@ import { buildDspPlaybackConfiguration } from "@/lib/dsp-player-core";
 import { applyQueueOrder, moveQueueId } from "@/lib/queue-core";
 import { advanceProgress, clamp, nextTrackIndex } from "@/lib/sphynx-core";
 import { pickLocalMusicFiles } from "@/lib/local-music";
-import { mergeListeningProfiles, normalizeProfileCustomization, normalizeProfileCustomizations, normalizeProfileQueueOrders, type ListeningProfile, type ListeningProfileCustomization, type ListeningProfileId } from "@/lib/listening-profile-core";
+import { MAX_PROFILE_PINNED_ALBUMS, mergeListeningProfiles, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfileCustomizations, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders, type ListeningProfile, type ListeningProfileCustomization, type ListeningProfileId } from "@/lib/listening-profile-core";
 import { addAudioRouteListener, audioRouteDetectionAvailable, getCurrentAudioRoute } from "@/modules/expo-audio-route";
 import { addDspPlaybackListener, dspPlaybackAvailable, getDspStatus, loadDspTrack, pauseDspTrack, playDspTrack, seekDspTrack, setDspConfiguration, unloadDspTrack, type DspPlaybackStatus } from "@/modules/expo-dsp-player";
 
@@ -218,6 +218,9 @@ type SphynxContextValue = {
   updateListeningProfile: (profileId: ListeningProfileId, patch: ListeningProfileCustomization) => void;
   profileQueueContinuity: boolean;
   setProfileQueueContinuity: (enabled: boolean) => void;
+  pinnedAlbums: Track[];
+  isPinnedAlbum: (trackId: string) => boolean;
+  togglePinnedAlbum: (trackId: string) => void;
   currentTrack: Track;
   queue: Track[];
   tracks: Track[];
@@ -281,6 +284,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track>(libraryTracks[0]);
   const [queueOrder, setQueueOrder] = useState<string[]>(() => libraryTracks.map((track) => track.id));
   const [profileQueueOrders, setProfileQueueOrders] = useState<Partial<Record<ListeningProfileId, string[]>>>({});
+  const [profilePinnedTrackIds, setProfilePinnedTrackIds] = useState<Partial<Record<ListeningProfileId, string[]>>>({});
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0.36);
   const [importedTracks, setImportedTracks] = useState<Track[]>([]);
@@ -314,6 +318,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
           profileCustomizations?: unknown;
           queueOrder?: string[];
           profileQueueOrders?: unknown;
+          profilePinnedTrackIds?: unknown;
           sound?: Partial<SoundSettings>;
           connected?: Partial<Record<ProviderId, boolean>>;
         };
@@ -324,6 +329,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
         setProfileCustomizations(normalizeProfileCustomizations(parsed.profileCustomizations));
         if (Array.isArray(parsed.queueOrder)) setQueueOrder(parsed.queueOrder.filter((id): id is string => typeof id === "string"));
         setProfileQueueOrders(normalizeProfileQueueOrders(parsed.profileQueueOrders));
+        setProfilePinnedTrackIds(normalizeProfilePinnedTrackIds(parsed.profilePinnedTrackIds));
         if (parsed.sound) setSoundState((current) => normalizeAudioSettings({ ...current, ...parsed.sound, eq: parsed.sound?.eq ?? current.eq }));
         if (parsed.connected) setConnectedState((current) => ({ ...current, ...parsed.connected }));
       })
@@ -331,9 +337,9 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const preferences = JSON.stringify({ themeId, materialId, activeListeningProfileId, profileQueueContinuity, profileCustomizations, queueOrder, profileQueueOrders, sound, connected });
+    const preferences = JSON.stringify({ themeId, materialId, activeListeningProfileId, profileQueueContinuity, profileCustomizations, queueOrder, profileQueueOrders, profilePinnedTrackIds, sound, connected });
     AsyncStorage.setItem(STORAGE_KEY, preferences).catch(() => undefined);
-  }, [activeListeningProfileId, connected, materialId, profileCustomizations, profileQueueContinuity, profileQueueOrders, queueOrder, sound, themeId]);
+  }, [activeListeningProfileId, connected, materialId, profileCustomizations, profilePinnedTrackIds, profileQueueContinuity, profileQueueOrders, queueOrder, sound, themeId]);
 
   useEffect(() => {
     AsyncStorage.getItem(LOCAL_LIBRARY_KEY)
@@ -436,6 +442,11 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const activeListeningProfile = listeningProfiles.find((profile) => profile.id === activeListeningProfileId) ?? listeningProfiles[0];
   const activeQueueOrder = profileQueueContinuity ? queueOrder : profileQueueOrders[activeListeningProfileId] ?? queueOrder;
   const queue = useMemo(() => applyQueueOrder(tracks, activeQueueOrder), [activeQueueOrder, tracks]);
+  const pinnedAlbumIds = profilePinnedTrackIds[activeListeningProfileId] ?? [];
+  const pinnedAlbums = useMemo(() => {
+    const tracksById = new Map(tracks.map((track) => [track.id, track]));
+    return pinnedAlbumIds.map((id) => tracksById.get(id)).filter((track): track is Track => Boolean(track));
+  }, [pinnedAlbumIds, tracks]);
 
   const setThemeId = useCallback((nextTheme: ThemeId) => setThemeIdState(nextTheme), []);
   const setMaterialId = useCallback((nextMaterial: AppMaterialId) => setMaterialIdState(nextMaterial), []);
@@ -458,6 +469,17 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
   const setProfileQueueContinuity = useCallback((enabled: boolean) => setProfileQueueContinuityState(enabled), []);
+  const isPinnedAlbum = useCallback((trackId: string) => pinnedAlbumIds.includes(trackId), [pinnedAlbumIds]);
+  const togglePinnedAlbum = useCallback((trackId: string) => {
+    if (!tracks.some((track) => track.id === trackId)) return;
+    setProfilePinnedTrackIds((current) => {
+      const currentIds = current[activeListeningProfileId] ?? [];
+      const nextIds = currentIds.includes(trackId)
+        ? currentIds.filter((id) => id !== trackId)
+        : normalizePinnedTrackIds([...currentIds, trackId]).slice(-MAX_PROFILE_PINNED_ALBUMS);
+      return { ...current, [activeListeningProfileId]: nextIds };
+    });
+  }, [activeListeningProfileId, tracks]);
   const setSound = useCallback((patch: Partial<SoundSettings>) => {
     setSoundState((current) => normalizeAudioSettings({ ...current, ...patch, eq: patch.eq ?? current.eq }));
   }, []);
@@ -730,6 +752,9 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       updateListeningProfile,
       profileQueueContinuity,
       setProfileQueueContinuity,
+      pinnedAlbums,
+      isPinnedAlbum,
+      togglePinnedAlbum,
       currentTrack,
       queue,
       tracks,
@@ -769,7 +794,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       localImportMessage,
       importLocalTracks,
     }),
-    [activeEqPresetId, activeHeadphoneGroupId, activeListeningProfile, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, dspProcessingActive, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPlaying, listeningProfiles, localImportMessage, localPlaybackError, materialId, moveQueueTrack, overwriteActiveEqPreset, playTrack, playbackDuration, playbackSeconds, profileQueueContinuity, progress, queue, renameHeadphoneGroup, reorderQueue, saveEqPreset, setActiveHeadphoneGroupId, setActiveListeningProfileId, setConnected, setMaterialId, setPlaybackProgress, setProfileQueueContinuity, setSound, setThemeId, skip, sound, themeId, togglePlayback, tracks, updateListeningProfile],
+    [activeEqPresetId, activeHeadphoneGroupId, activeListeningProfile, applyEqPreset, connected, createDeviceGroup, currentTrack, deleteEqPreset, deleteHeadphoneGroup, detectedAudioRoute, dspProcessingActive, eqPresets, headphoneGroups, importLocalTracks, importedTracks, isImporting, isPinnedAlbum, isPlaying, listeningProfiles, localImportMessage, localPlaybackError, materialId, moveQueueTrack, overwriteActiveEqPreset, pinnedAlbums, playTrack, playbackDuration, playbackSeconds, profileQueueContinuity, progress, queue, renameHeadphoneGroup, reorderQueue, saveEqPreset, setActiveHeadphoneGroupId, setActiveListeningProfileId, setConnected, setMaterialId, setPlaybackProgress, setProfileQueueContinuity, setSound, setThemeId, skip, sound, themeId, togglePinnedAlbum, togglePlayback, tracks, updateListeningProfile],
   );
 
   return <SphynxContext.Provider value={value}>{children}</SphynxContext.Provider>;

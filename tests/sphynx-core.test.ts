@@ -5,7 +5,7 @@ import { clampAdvancedAudioSettings, nativeVolumeFromTrim } from "../lib/advance
 import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
 import { buildDspPlaybackConfiguration, isDspProcessingEnabled } from "../lib/dsp-player-core";
 import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/listening-field-core";
-import { findListeningProfile, mergeListeningProfiles, normalizeProfileCustomization, normalizeProfileQueueOrders } from "../lib/listening-profile-core";
+import { findListeningProfile, mergeListeningProfiles, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders } from "../lib/listening-profile-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { applyQueueOrder, moveQueueId } from "../lib/queue-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
@@ -135,5 +135,10 @@ describe("Sphynx playback boundaries", () => {
     expect(normalizeProfileCustomization({ name: "  After   Hours  ", cue: "#F05A47" })).toEqual({ name: "After Hours", cue: "#F05A47" });
     expect(normalizeProfileCustomization({ name: "  ", cue: "#ffffff" })).toEqual({});
     expect(mergeListeningProfiles({ sora: { name: "After Hours", cue: "#F05A47" } })[0]).toMatchObject({ id: "sora", name: "After Hours", cue: "#F05A47" });
+  });
+
+  it("keeps pinned albums identity-scoped, unique, bounded, and safe to restore", () => {
+    expect(normalizePinnedTrackIds(["a", "a", 2, "b", "c"])).toEqual(["a", "b", "c"]);
+    expect(normalizeProfilePinnedTrackIds({ sora: ["a", "b"], "guest-session": ["c"], unknown: ["d"] })).toEqual({ sora: ["a", "b"], "guest-session": ["c"] });
   });
 });
