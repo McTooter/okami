@@ -93,3 +93,7 @@
 - [x] Validate the public-source workflow and provide the IPA artifact retrieval path.
 - [x] Research current no-paid-Apple-account options for generating or installing an Okami IPA.
 - [x] Document the verified constraints and viable next steps for personal iPhone testing.
+- [x] Verify SideStore requirements for installing a GitHub-generated unsigned IPA with a free Apple ID.
+- [x] Add a macOS GitHub Actions workflow that packages an unsigned Okami IPA for SideStore.
+- [x] Document SideStore artifact retrieval and personal-device installation steps.
+- [ ] Validate, checkpoint, and publish the SideStore packaging update to the public repository.

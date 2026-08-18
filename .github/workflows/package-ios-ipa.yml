@@ -1,4 +1,4 @@
-name: Package Okami iOS IPA
+name: Package Okami SideStore IPA
 
 on:
   workflow_dispatch:
@@ -9,12 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: package-ios-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  package-ipa:
-    name: Validate and package iOS IPA
-    runs-on: ubuntu-latest
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  package-unsigned-ipa:
+    name: Build unsigned IPA for SideStore
+    runs-on: macos-15
 
     steps:
       - name: Check out source
@@ -30,12 +32,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Set up Expo Application Services
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -45,21 +41,43 @@ jobs:
           pnpm run lint
           pnpm test
 
-      - name: Create an internal-distribution iOS build
-        id: eas_build
+      - name: Generate the native iOS project
+        run: npx expo prebuild --platform ios --non-interactive --clean
+
+      - name: Build a device app without distribution signing
+        id: unsigned_build
         run: |
-          eas build --platform ios --profile preview --non-interactive --wait --json > eas-build.json
-          BUILD_ID="$(node -e 'const build = require("./eas-build.json"); console.log((Array.isArray(build) ? build[0] : build).id)')"
-          test -n "$BUILD_ID"
-          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          WORKSPACE="$(find ios -maxdepth 1 -name '*.xcworkspace' -print -quit)"
+          test -n "$WORKSPACE"
+          SCHEME="$(basename "$WORKSPACE" .xcworkspace)"
+          DERIVED_DATA="$RUNNER_TEMP/okami-derived-data"
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+          APP_PATH="$(find "$DERIVED_DATA/Build/Products/Release-iphoneos" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$APP_PATH"
+          test ! -f "$APP_PATH/embedded.mobileprovision"
+          echo "app_path=$APP_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Download generated IPA
-        run: eas build:download --build-id "${{ steps.eas_build.outputs.build_id }}" --non-interactive
+      - name: Package the unsigned IPA
+        run: |
+          ARTIFACT_ROOT="$RUNNER_TEMP/okami-ipa"
+          mkdir -p "$ARTIFACT_ROOT/Payload"
+          ditto "${{ steps.unsigned_build.outputs.app_path }}" "$ARTIFACT_ROOT/Payload/Okami.app"
+          ditto -c -k --sequesterRsrc --keepParent "$ARTIFACT_ROOT/Payload" okami-sidestore-unsigned.ipa
+          unzip -l okami-sidestore-unsigned.ipa | grep -q 'Payload/Okami.app/Info.plist'
 
-      - name: Upload IPA artifact
+      - name: Upload SideStore IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: okami-ios-ipa
-          path: "*.ipa"
+          name: okami-sidestore-unsigned-ipa
+          path: okami-sidestore-unsigned.ipa
           if-no-files-found: error
           retention-days: 14

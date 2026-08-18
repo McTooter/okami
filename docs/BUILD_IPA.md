@@ -1,34 +1,32 @@
-# Package an Okami IPA
+# Packaging an Okami IPA for SideStore
 
-The repository includes a GitHub Actions workflow at `.github/workflows/package-ios-ipa.yml`. It validates the source, asks Expo Application Services (EAS) to create an **iOS internal-distribution build**, downloads the resulting IPA, and publishes it as the `okami-ios-ipa` workflow artifact.
+The repository’s **Package Okami SideStore IPA** GitHub Actions workflow creates an unsigned, device-targeted IPA artifact. It does not use EAS, Apple certificates, provisioning profiles, or repository secrets. The intended installation path is SideStore, which applies the user’s personal development signing on their own device.[1]
 
-## One-time setup
+> The artifact is not an ad hoc, TestFlight, or App Store build. Do not expect iOS to install it directly from Files. Import it into SideStore instead.
 
-Before the first automated run, initialize the project and iOS credentials from a local terminal with an Expo account that belongs to the app owner:
+## Prerequisites
 
-```sh
-pnpm install --frozen-lockfile
-npx eas-cli@latest build:configure
-npx eas-cli@latest build --platform ios --profile preview
-```
+Before using the artifact, install and refresh SideStore on the target device. SideStore’s official prerequisites require an Apple Account, Wi-Fi, LocalDevVPN, a supported iOS/iPadOS device, and a computer for the initial SideStore installation.[2] A free Apple Account is limited to three active apps including SideStore and ten App IDs per week; SideStore refreshes personal-signing apps during their seven-day development period.[1]
 
-This one-time interactive build establishes the EAS project ID and the iOS signing setup required for later non-interactive CI runs. EAS documents this initialization as a prerequisite for CI builds. [1]
-Then create a GitHub Actions repository secret named `EXPO_TOKEN` using an Expo personal access token. Do not commit that token, Apple certificates, provisioning profiles, or private keys to the repository. [1] [3]
+## Build and install
 
-## Triggering and retrieving the IPA
+Run **Actions → Package Okami SideStore IPA → Run workflow**, or push a version tag such as `v1.0.0`. When the workflow completes, download the `okami-sidestore-unsigned-ipa` artifact and extract `okami-sidestore-unsigned.ipa` from GitHub’s download archive. Then open that IPA with SideStore through the iOS share sheet or its import interface. With LocalDevVPN connected, SideStore re-signs and installs the app using the Apple Account configured in SideStore.[1] [2]
 
-Run **Actions → Package Okami iOS IPA → Run workflow**, or push a version tag such as `v1.0.0`. When the workflow completes, download the `okami-ios-ipa` artifact from that run. The profile in `eas.json` is an internal-distribution profile, so an iPhone install requires the Apple signing method supported by the account. For ad hoc distribution, the target device’s UDID must be registered before the build. [2]
-| Build configuration | Value |
+| Build configuration   | Value                                   |
 | --------------------- | --------------------------------------- |
-| Workflow | `.github/workflows/package-ios-ipa.yml` |
-| EAS profile | `preview` |
-| Distribution | Internal |
-| GitHub secret | `EXPO_TOKEN` |
-| Downloadable artifact | `okami-ios-ipa` |
-| Artifact retention | 14 days |
+| Workflow              | `.github/workflows/package-ios-ipa.yml` |
+| Runner                | `macos-15`                              |
+| Build type            | Unsigned device IPA                     |
+| GitHub secrets        | None                                    |
+| Downloadable artifact | `okami-sidestore-unsigned-ipa`          |
+| Artifact retention    | 14 days                                 |
+| Installation method   | Import into SideStore                   |
+
+## What the workflow does
+
+The workflow validates the project, runs Expo prebuild for iOS, builds the generated device app with code signing disabled, wraps that app in the standard `Payload/Okami.app` IPA structure, and uploads the result as a GitHub Actions artifact. SideStore’s own signing process remains responsible for making it installable on the personal device.
 
 ## References
 
-[1]: https://docs.expo.dev/build/building-on-ci/ "Expo: Trigger builds from CI"
-[2]: https://docs.expo.dev/build/internal-distribution/ "Expo: Internal distribution"
-[3]: https://github.com/expo/expo-github-action "expo/expo-github-action"
+[1]: https://docs.sidestore.io/docs/faq "SideStore: Frequently Asked Questions"
+[2]: https://docs.sidestore.io/docs/installation/prerequisites "SideStore: Prerequisites"
