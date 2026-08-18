@@ -79,3 +79,5 @@
 - [x] Validate the visible Library header branding and save a checkpoint.
 - [x] Replace every remaining user-facing Sphynx mention in Sound Lab with Okami.
 - [x] Validate Sound Lab branding and save a checkpoint.
+- [x] Replace every remaining user-facing Sphynx mention in Theme Atelier with Okami.
+- [x] Validate Theme Atelier branding and save a checkpoint.

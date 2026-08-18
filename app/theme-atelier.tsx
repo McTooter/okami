@@ -68,7 +68,7 @@ export default function ThemeAtelierScreen() {
 
         <View style={[styles.designNote, { backgroundColor: theme.raised, borderColor: theme.border }]}>
           <Ionicons name="contrast-outline" size={20} color={theme.accent} />
-          <Text style={[styles.designText, { color: theme.muted }]}>Sphynx protects legibility: destructive, active, and source states keep distinct labels and shapes, not color alone.</Text>
+          <Text style={[styles.designText, { color: theme.muted }]}>Okami protects legibility: destructive, active, and source states keep distinct labels and shapes, not color alone.</Text>
         </View>
       </ScrollView>
     </ScreenContainer>
