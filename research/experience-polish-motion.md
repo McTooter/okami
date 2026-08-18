@@ -48,3 +48,13 @@ Streaming-profile research reinforces a different principle: switching identity 
 7. Spotify for Artists, [Canvas](https://artists.spotify.com/en/canvas). Canvas illustrates the role of short, track-linked visual loops in a Now Playing context.
 8. CXL, [Analyzing Netflix Design, UI and UX](https://cxl.com/blog/netflix-design/). The analysis highlights simple personalization choices and a short, visible profile-selection flow.
 9. UX Magazine, [How Insight from Netflix Profiles Doubled Our Conversions](https://uxmag.com/articles/how-insight-from-netflix-profiles-doubled-our-conversions). The case study supports clearly exposing profile identity when it affects the user’s experience.
+
+## Editable identity and continuation rails
+
+Apple’s focus guidance distinguishes passive, focused, chosen, active, and unavailable states; in collections, an entire item highlight is generally easier to parse than a narrow focus ring. Apple’s motion guidance also recommends that custom motion be purposeful, brief, cancellable, and optional, never the only indicator of state. The Sphynx continuation rail therefore uses a contained horizontal track, a compact pressed/elevated card state, and a single active-progress cue rather than endless decorative movement. The existing reduced-motion setting removes transforms while retaining color and opacity changes.
+
+For editable Listening Identities, the profile surface exposes self-explanatory name and color controls close to the selected identity rather than sending people through an ambiguous account flow. The original material variants alter the feedback geometry — Noir Pulse moves laterally with a cutout cue, while Sunlit Signal lifts cards through a rounded broadcast marker — without replicating third-party assets, screen structure, or branding.
+
+10. Apple Human Interface Guidelines, [Focus and selection](https://developer.apple.com/design/human-interface-guidelines/focus-and-selection). The guidance describes focus, chosen, active, and unavailable states and collection highlight behavior.
+11. Apple Human Interface Guidelines, [Motion](https://developer.apple.com/design/human-interface-guidelines/motion). Apple recommends purposeful, optional, brief, and gesture-consistent motion.
+12. Treehouse, [How To Design Usable Profile Interfaces for iOS Mobile Applications](https://blog.teamtreehouse.com/how-to-design-usable-profile-interfaces-for-ios-mobile-applications). The article emphasizes clear, self-explanatory profile controls and navigational context.

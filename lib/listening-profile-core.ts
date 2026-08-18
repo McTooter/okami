@@ -12,6 +12,13 @@ export type ListeningProfile = {
   artwork: ArtworkId;
 };
 
+export type ListeningProfileCustomization = {
+  name?: string;
+  cue?: string;
+};
+
+export const PROFILE_AVATAR_COLORS = ["#CAFF4A", "#F05A47", "#E7A628", "#8DA8FF", "#EE8CF5", "#71D6D1"] as const;
+
 export const LISTENING_PROFILES: readonly ListeningProfile[] = [
   { id: "sora", name: "Sora", descriptor: "Primary desk", taste: "Slow-glow electronica", note: "Keeps the current playback queue close.", cue: "#CAFF4A", artwork: "interval" },
   { id: "night-transit", name: "Night Transit", descriptor: "Late listening", taste: "Nocturne, pressure, long-form", note: "A separate queue for after-hours listening.", cue: "#8DA8FF", artwork: "horizon" },
@@ -20,6 +27,28 @@ export const LISTENING_PROFILES: readonly ListeningProfile[] = [
 
 export function findListeningProfile(id: string | null | undefined): ListeningProfile {
   return LISTENING_PROFILES.find((profile) => profile.id === id) ?? LISTENING_PROFILES[0];
+}
+
+export function normalizeProfileCustomization(value: unknown): ListeningProfileCustomization {
+  if (!value || typeof value !== "object") return {};
+  const input = value as Record<string, unknown>;
+  const rawName = typeof input.name === "string" ? input.name.replace(/\s+/g, " ").trim().slice(0, 26) : "";
+  const rawCue = typeof input.cue === "string" && PROFILE_AVATAR_COLORS.includes(input.cue as (typeof PROFILE_AVATAR_COLORS)[number]) ? input.cue : undefined;
+  return { ...(rawName ? { name: rawName } : {}), ...(rawCue ? { cue: rawCue } : {}) };
+}
+
+export function normalizeProfileCustomizations(value: unknown): Partial<Record<ListeningProfileId, ListeningProfileCustomization>> {
+  if (!value || typeof value !== "object") return {};
+  const input = value as Record<string, unknown>;
+  return LISTENING_PROFILES.reduce<Partial<Record<ListeningProfileId, ListeningProfileCustomization>>>((result, profile) => {
+    const normalized = normalizeProfileCustomization(input[profile.id]);
+    if (Object.keys(normalized).length) result[profile.id] = normalized;
+    return result;
+  }, {});
+}
+
+export function mergeListeningProfiles(customizations: Partial<Record<ListeningProfileId, ListeningProfileCustomization>>): ListeningProfile[] {
+  return LISTENING_PROFILES.map((profile) => ({ ...profile, ...customizations[profile.id] }));
 }
 
 export function normalizeProfileQueueOrders(value: unknown): Partial<Record<ListeningProfileId, string[]>> {

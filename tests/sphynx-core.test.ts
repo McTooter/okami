@@ -5,7 +5,7 @@ import { clampAdvancedAudioSettings, nativeVolumeFromTrim } from "../lib/advance
 import { findMatchingHeadphoneGroup } from "../lib/audio-route-core";
 import { buildDspPlaybackConfiguration, isDspProcessingEnabled } from "../lib/dsp-player-core";
 import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/listening-field-core";
-import { findListeningProfile, normalizeProfileQueueOrders } from "../lib/listening-profile-core";
+import { findListeningProfile, mergeListeningProfiles, normalizeProfileCustomization, normalizeProfileQueueOrders } from "../lib/listening-profile-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { applyQueueOrder, moveQueueId } from "../lib/queue-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
@@ -129,5 +129,11 @@ describe("Sphynx playback boundaries", () => {
     expect(findListeningProfile("night-transit")).toMatchObject({ name: "Night Transit", artwork: "horizon" });
     expect(findListeningProfile("missing").id).toBe("sora");
     expect(normalizeProfileQueueOrders({ sora: ["a", 1], "night-transit": ["b", "c"], other: ["z"] })).toEqual({ sora: ["a"], "night-transit": ["b", "c"] });
+  });
+
+  it("normalizes editable local identity values without accepting arbitrary avatar colors", () => {
+    expect(normalizeProfileCustomization({ name: "  After   Hours  ", cue: "#F05A47" })).toEqual({ name: "After Hours", cue: "#F05A47" });
+    expect(normalizeProfileCustomization({ name: "  ", cue: "#ffffff" })).toEqual({});
+    expect(mergeListeningProfiles({ sora: { name: "After Hours", cue: "#F05A47" } })[0]).toMatchObject({ id: "sora", name: "After Hours", cue: "#F05A47" });
   });
 });

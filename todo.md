@@ -57,3 +57,8 @@
 - [x] Add reduced-motion-aware animated album-cover treatments to Library, Mini Player, and Now Playing.
 - [x] Build an original streaming-inspired Profile screen with profile switching, taste cards, and listening-continuity controls.
 - [x] Validate album animation, profile interactions, accessibility, TypeScript, linting, and deterministic tests.
+- [x] Research high-level editable-profile and continuation-rail interaction patterns without reproducing third-party assets or layouts.
+- [x] Define original material-specific selection, avatar editing, and rail-motion behavior for Listening Identity.
+- [x] Add persistent editable identity names and avatar colors with accessible editing controls.
+- [x] Build a per-identity continue-listening rail with smooth, reduced-motion-aware interaction feedback.
+- [x] Validate profile editing, persistence, rail interactions, accessibility, TypeScript, linting, and deterministic tests.

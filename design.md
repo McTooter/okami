@@ -134,3 +134,18 @@ Sphynx’s profile system is an original **Listening Identity** model. It is loc
 | **Continuity control** | Makes it explicit whether the active queue follows the selected identity. | The state change has a concise cue sweep and haptic response, never a destructive reset without confirmation. |
 
 The profile direction is influenced only by the high-level streaming pattern of clear, compact identity selection and personalized continuity. It does not use Netflix marks, avatar styles, copy, account models, or layouts.
+
+## Editable identities and continuation rail
+
+Identity editing stays local, immediate, and reversible. The active identity exposes a compact inline name field and a row of six high-contrast color swatches; the selected swatch changes the monogram and selected-identity cue without altering the app-wide Theme or Material. Input accepts a concise display name, normalizes whitespace, and falls back to the identity’s original name if left blank. There is no account-sign-up or hidden persistence boundary.
+
+The **Continue listening** rail is horizontal, card-led, and identity-specific. It draws from the existing queue order for the selected identity, exposes the current track with an active progress cue, and allows direct playback. Its horizontal movement is user driven through native scrolling; cards have a compact press response on touch and a subtle hover lift on pointer-capable platforms. A selected card uses a material-colored cue edge, with Noir Pulse resolving laterally and Sunlit Signal resolving upward through a soft broadcast stamp. The rail uses a single entrance sequence and never auto-scrolls, cycles, or competes with playback.
+
+| Interaction | Standard motion | Reduced-motion behavior |
+|---|---|---|
+| **Identity name / color edit** | 120 ms cue change and selected-card lift. | Color and opacity state change only. |
+| **Continuation card press** | 92 ms depth response; material directional travel; immediate playback. | 100 ms opacity response; immediate playback. |
+| **Pointer hover** | 140 ms 1.02-scale and 2-point lift on the specific card only. | Cue-color change only. |
+| **Rail entrance** | Short staggered horizontal reveal, then static. | One opacity reveal; no horizontal offset. |
+
+The two material variants use original visual rules: Noir Pulse emphasizes decisive cutout markers and lateral cues, while Sunlit Signal uses warm, softly rounded broadcast stamps and upward resolution. No third-party names, layouts, visual assets, or animation sequences are reproduced.

@@ -17,22 +17,23 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
  * intentionally brief, while material-specific directional response makes
  * every direct control feel alive without delaying its action.
  */
-export function MotionPressable({ children, emphasis = "standard", onPressIn, onPressOut, style, ...props }: MotionPressableProps) {
+export function MotionPressable({ children, emphasis = "standard", onHoverIn, onHoverOut, onPressIn, onPressOut, style, ...props }: MotionPressableProps) {
   const { material, sound } = useSphynx();
   const press = useSharedValue(0);
+  const hover = useSharedValue(0);
   const motionReduced = sound.motionReduced;
   const direction = material.id === "noir-pulse" ? -1 : material.id === "sunlit-signal" ? 1 : 0;
   const compression = emphasis === "primary" ? 0.968 : emphasis === "compact" ? 0.982 : 0.976;
   const travel = emphasis === "primary" ? 2.4 : 1.4;
 
   const feedbackStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(press.value, [0, 1], [1, 0.86]),
+    opacity: interpolate(press.value, [0, 1], [1, 0.86]) + hover.value * 0.02,
     transform: motionReduced
       ? []
       : [
-          { scale: interpolate(press.value, [0, 1], [1, compression]) },
+          { scale: interpolate(press.value, [0, 1], [1 + hover.value * 0.02, compression]) },
           { translateX: press.value * direction * travel },
-          { translateY: material.id === "sunlit-signal" ? press.value * travel : 0 },
+          { translateY: (material.id === "sunlit-signal" ? press.value * travel : 0) - hover.value * 2 },
         ],
   }), [compression, direction, material.id, motionReduced, travel]);
 
@@ -46,6 +47,14 @@ export function MotionPressable({ children, emphasis = "standard", onPressIn, on
       onPressOut={(event) => {
         press.value = withTiming(0, { duration: 145 });
         onPressOut?.(event);
+      }}
+      onHoverIn={(event) => {
+        if (!motionReduced) hover.value = withTiming(1, { duration: 140 });
+        onHoverIn?.(event);
+      }}
+      onHoverOut={(event) => {
+        hover.value = withTiming(0, { duration: 140 });
+        onHoverOut?.(event);
       }}
       style={(state) => [typeof style === "function" ? style(state) : style, feedbackStyle]}
     >
