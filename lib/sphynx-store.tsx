@@ -568,7 +568,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       setImportedTracks((current) => [...imports, ...current]);
       setLocalImportMessage(`${imports.length} ${imports.length === 1 ? "track" : "tracks"} added to this iPhone.`);
     } catch {
-      setLocalImportMessage("Sphynx could not import those files. Try a standard audio file.");
+      setLocalImportMessage("Okami could not import those files. Try a standard audio file.");
     } finally {
       setIsImporting(false);
     }
