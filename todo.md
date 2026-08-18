@@ -69,3 +69,9 @@
 - [x] Define per-identity pinned-shelf drag ordering, accessible alternatives, and original material-specific motion rules.
 - [x] Implement persistent drag-and-drop reordering for pinned albums with accessible one-step reorder controls.
 - [x] Validate pinned-order persistence, drag motion safeguards, accessibility, TypeScript, linting, and deterministic tests.
+- [x] Rebrand the project display name as Okami and update user-facing branding references.
+- [x] Create and install a white Okami launcher icon with an original black rising-sun mark.
+- [x] Validate branding configuration, generated image assets, and project integrity before checkpointing.
+- [x] Replace the initial Okami icon with a more distinctive, premium black rising-sun mark on white.
+- [x] Validate the refined icon at launcher scale and install it across all branding asset locations.
+- [x] Replace the single-ray treatment with a balanced, intentional multi-ray rising-sun mark.

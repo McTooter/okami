@@ -6,11 +6,11 @@ import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
 import { type ProviderId, useSphynx } from "@/lib/sphynx-store";
 
-const services: { id: ProviderId; icon: keyof typeof Ionicons.glyphMap; note: string; capability: string }[] = [
-  { id: "Sphynx", icon: "radio-outline", note: "Your first-party and approved playback surface.", capability: "Sphynx/local eligible playback" },
-  { id: "Local", icon: "phone-portrait-outline", note: "Files you have placed on this device.", capability: "Device-local playback" },
-  { id: "TIDAL", icon: "layers-outline", note: "Requires approved authorization and provider playback setup.", capability: "Metadata and eligible SDK playback" },
-  { id: "YouTube", icon: "play-circle-outline", note: "Requires a supported embedded player or provider handoff.", capability: "Discovery and supported handoff" },
+const services: { id: ProviderId; name: string; icon: keyof typeof Ionicons.glyphMap; note: string; capability: string }[] = [
+  { id: "Sphynx", name: "Okami", icon: "radio-outline", note: "Your first-party and approved playback surface.", capability: "Okami/local eligible playback" },
+  { id: "Local", name: "Local", icon: "phone-portrait-outline", note: "Files you have placed on this device.", capability: "Device-local playback" },
+  { id: "TIDAL", name: "TIDAL", icon: "layers-outline", note: "Requires approved authorization and provider playback setup.", capability: "Metadata and eligible SDK playback" },
+  { id: "YouTube", name: "YouTube", icon: "play-circle-outline", note: "Requires a supported embedded player or provider handoff.", capability: "Discovery and supported handoff" },
 ];
 
 export default function ConnectedServicesScreen() {
@@ -43,7 +43,7 @@ export default function ConnectedServicesScreen() {
               <View key={service.id} style={[styles.serviceCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <View style={[styles.serviceIcon, { backgroundColor: theme.raised }]}><Ionicons name={service.icon} size={22} color={theme.accent} /></View>
                 <View style={styles.serviceCopy}>
-                  <View style={styles.serviceNameRow}><Text style={[styles.serviceName, { color: theme.foreground }]}>{service.id}</Text><View style={[styles.stateDot, { backgroundColor: isConnected ? theme.accent : theme.border }]} /></View>
+                  <View style={styles.serviceNameRow}><Text style={[styles.serviceName, { color: theme.foreground }]}>{service.name}</Text><View style={[styles.stateDot, { backgroundColor: isConnected ? theme.accent : theme.border }]} /></View>
                   <Text style={[styles.serviceNote, { color: theme.muted }]}>{service.note}</Text>
                   <Text style={[styles.capability, { color: theme.accent }]}>{service.capability}</Text>
                 </View>

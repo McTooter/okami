@@ -48,7 +48,7 @@ export const DEFAULT_HEADPHONE_GROUP: HeadphoneGroup = {
 
 export type AudioSettingsExport = {
   schemaVersion: 2;
-  app: "Sphynx";
+  app: "Okami";
   exportedAt: string;
   sound: AudioSettingsSnapshot;
   eqPresets: EqPreset[];
@@ -114,7 +114,7 @@ export function buildAudioSettingsExport(
 ): AudioSettingsExport {
   return {
     schemaVersion: 2,
-    app: "Sphynx",
+    app: "Okami",
     exportedAt: exportedAt.toISOString(),
     sound: cloneAudioSettings(sound),
     eqPresets: eqPresets.map((preset) => ({ ...preset, settings: cloneAudioSettings(preset.settings) })),

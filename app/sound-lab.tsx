@@ -91,7 +91,7 @@ export default function SoundLabScreen() {
           </View>
           <View style={styles.dspStatusCopy}>
             <Text style={[styles.dspStatusTitle, { color: dspProcessingActive ? theme.accentInk : theme.foreground }]}>{dspProcessingActive ? "Native DSP is processing this local track" : dspPlaybackAvailable ? "Native DSP ready" : "Standard player fallback"}</Text>
-            <Text style={[styles.dspStatusNote, { color: dspProcessingActive ? theme.accentInk : theme.muted }]}>{dspProcessingActive ? "Parametric EQ, preamp, limiter, compressor, and loudness contour are active." : dspPlaybackAvailable ? currentTrack.localUri ? "Press play on an imported file to engage the native chain." : "Import a local track to use Sphynx’s Audio Unit chain." : "Custom iOS build required for live Audio Unit processing."}</Text>
+            <Text style={[styles.dspStatusNote, { color: dspProcessingActive ? theme.accentInk : theme.muted }]}>{dspProcessingActive ? "Parametric EQ, preamp, limiter, compressor, and loudness contour are active." : dspPlaybackAvailable ? currentTrack.localUri ? "Press play on an imported file to engage the native chain." : "Import a local track to use Okami’s Audio Unit chain." : "Custom iOS build required for live Audio Unit processing."}</Text>
           </View>
         </Animated.View>
 

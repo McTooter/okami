@@ -28,10 +28,10 @@ const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
   // App branding - update these values directly (do not use env vars)
-  appName: "Sphynx",
+  appName: "Okami",
   appSlug: "sphynx",
-  // Hosted asset URL for the Sphynx launcher mark.
-  logoUrl: "/manus-storage/sphynx-icon_07816583.png",
+  // Hosted asset URL for the Okami launcher mark.
+  logoUrl: "/manus-storage/okami-rising-sun-icon-multiray.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -56,7 +56,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#0A0B0D",
+      backgroundColor: "#FFFFFF",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -105,9 +105,9 @@ const config: ExpoConfig = {
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#0A0B0D",
+        backgroundColor: "#FFFFFF",
         dark: {
-          backgroundColor: "#000000",
+          backgroundColor: "#FFFFFF",
         },
       },
     ],

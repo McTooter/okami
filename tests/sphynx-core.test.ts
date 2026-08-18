@@ -61,7 +61,7 @@ describe("Sphynx playback boundaries", () => {
     const exported = buildAudioSettingsExport(sound, [preset], new Date("2026-08-17T00:00:00.000Z"), [DEFAULT_HEADPHONE_GROUP, group], group.id);
     sound.eq[0] = 3;
     expect(preset.name).toBe("Studio nearfields");
-    expect(exported).toMatchObject({ schemaVersion: 2, app: "Sphynx", exportedAt: "2026-08-17T00:00:00.000Z", sound: { eq: [1, 0, -1, 2, 0], playbackRate: 1.25, outputTrim: -4 }, eqPresets: [{ name: "Studio nearfields", groupId: "device-1" }], headphoneGroups: [{ id: "general-audio", protected: true }, { id: "device-1", name: "Audeze LCD-X" }], activeHeadphoneGroupId: "device-1" });
+    expect(exported).toMatchObject({ schemaVersion: 2, app: "Okami", exportedAt: "2026-08-17T00:00:00.000Z", sound: { eq: [1, 0, -1, 2, 0], playbackRate: 1.25, outputTrim: -4 }, eqPresets: [{ name: "Studio nearfields", groupId: "device-1" }], headphoneGroups: [{ id: "general-audio", protected: true }, { id: "device-1", name: "Audeze LCD-X" }], activeHeadphoneGroupId: "device-1" });
   });
 
   it("keeps preset names compact and usable", () => {

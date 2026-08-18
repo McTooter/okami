@@ -11,9 +11,10 @@ import { useArtworkTransition } from "./artwork-transition";
 
 export function SourceBadge({ provider }: { provider: Track["provider"] }) {
   const { theme } = useSphynx();
+  const displayProvider = provider === "Sphynx" ? "Okami" : provider;
   return (
     <View style={[styles.sourceBadge, { borderColor: theme.border, backgroundColor: theme.surface }]}>
-      <Text style={[styles.sourceText, { color: theme.muted }]}>{provider}</Text>
+      <Text style={[styles.sourceText, { color: theme.muted }]}>{displayProvider}</Text>
     </View>
   );
 }
