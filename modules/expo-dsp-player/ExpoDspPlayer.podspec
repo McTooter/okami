@@ -3,6 +3,7 @@ Pod::Spec.new do |s|
   s.version        = '1.0.0'
   s.summary        = 'Sphynx local-file DSP playback module.'
   s.description    = 'An Expo Modules bridge for Sphynx AVAudioEngine DSP playback.'
+  s.homepage       = 'https://github.com/McTooter/okami'
   s.license        = { :type => 'MIT' }
   s.authors        = { 'Sphynx' => 'engineering@sphynx.local' }
   s.platforms      = { :ios => '15.1' }

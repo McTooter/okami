@@ -3,6 +3,7 @@ Pod::Spec.new do |s|
   s.version        = '1.0.0'
   s.summary        = 'Sphynx selected-audio-route observation module.'
   s.description    = 'An Expo Modules bridge for Sphynx iOS audio-route changes.'
+  s.homepage       = 'https://github.com/McTooter/okami'
   s.license        = { :type => 'MIT' }
   s.authors        = { 'Sphynx' => 'engineering@sphynx.local' }
   s.platforms      = { :ios => '15.1' }

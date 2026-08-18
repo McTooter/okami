@@ -97,3 +97,5 @@
 - [x] Add a macOS GitHub Actions workflow that packages an unsigned Okami IPA for SideStore.
 - [x] Document SideStore artifact retrieval and personal-device installation steps.
 - [ ] Validate, checkpoint, and publish the SideStore packaging update to the public repository.
+- [x] Add CocoaPods-required homepage metadata to project-local iOS modules so GitHub can generate the Okami native project.
+- [ ] Re-run the public SideStore IPA workflow and confirm the artifact uploads successfully.
