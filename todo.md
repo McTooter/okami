@@ -113,3 +113,4 @@
 - [x] Research public kinetic menu and transition principles from the requested reference style, then implement original Okami navigation and animation refinements.
 - [x] Run the SideStore unsigned IPA workflow from the newly published Noir Pulse update and confirm the updated artifact is available.
 - [x] Rebuild the live iPad landscape Library composition and show the original Noir Pulse material directly in the preview.
+- [x] Correct the iPad landscape command dock so all five routes remain legible and evenly distributed.

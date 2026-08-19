@@ -20,7 +20,7 @@ const COMMANDS: Record<string, { label: string; icon: IconName }> = {
   profile: { label: "Identity", icon: "person-outline" },
 };
 
-function DockCommand({ command, focused, onPress, onLongPress, wide }: { command: { label: string; icon: IconName }; focused: boolean; onPress: () => void; onLongPress: () => void; wide: boolean }) {
+function DockCommand({ command, focused, onPress, onLongPress, wide, width }: { command: { label: string; icon: IconName }; focused: boolean; onPress: () => void; onLongPress: () => void; wide: boolean; width?: number }) {
   const { material, sound, theme } = useSphynx();
   const isNoirPulse = material.id === "noir-pulse";
   const selected = useSharedValue(focused ? 1 : 0);
@@ -45,7 +45,7 @@ function DockCommand({ command, focused, onPress, onLongPress, wide }: { command
       onLongPress={onLongPress}
       onPress={onPress}
       emphasis="compact"
-      style={[styles.command, wide && styles.iPadCommand]}
+      style={[styles.command, wide && styles.iPadCommand, wide && width ? { width } : undefined]}
     >
       <Animated.View pointerEvents="none" style={[styles.activePill, isNoirPulse && styles.noirActiveMarker, { backgroundColor: cue }, activePillStyle]} />
       <View style={styles.commandContent}>
@@ -65,12 +65,14 @@ export function OkamiCommandDock({ state, descriptors, navigation }: BottomTabBa
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
   const isIpadLandscape = isWideLibraryCanvas(width, height);
+  const iPadDockWidth = Math.min(Math.max(width * 0.58, 520), 740);
+  const iPadCommandWidth = (iPadDockWidth - 8) / state.routes.length;
   const cue = material.cue ?? theme.accent;
   const bottomInset = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 10);
 
   return (
     <View style={[styles.shell, isNoirPulse && styles.noirShell, isIpadLandscape && styles.iPadShell, { paddingBottom: bottomInset }]}>
-      <View style={[styles.dock, isNoirPulse && styles.noirDock, isIpadLandscape && styles.iPadDock, { backgroundColor: theme.raised, borderColor: theme.border }]}>
+      <View style={[styles.dock, isNoirPulse && styles.noirDock, isIpadLandscape && styles.iPadDock, isIpadLandscape ? { width: iPadDockWidth } : undefined, { backgroundColor: theme.raised, borderColor: theme.border }]}>
         <View pointerEvents="none" style={[styles.signalLine, { backgroundColor: cue }]} />
         {state.routes.map((route, index) => {
           const focused = state.index === index;
@@ -84,7 +86,7 @@ export function OkamiCommandDock({ state, descriptors, navigation }: BottomTabBa
           };
           const onLongPress = () => navigation.emit({ type: "tabLongPress", target: route.key });
 
-          return <DockCommand command={command} focused={focused} key={route.key} onLongPress={onLongPress} onPress={onPress} wide={isIpadLandscape} />;
+          return <DockCommand command={command} focused={focused} key={route.key} onLongPress={onLongPress} onPress={onPress} wide={isIpadLandscape} width={isIpadLandscape ? iPadCommandWidth : undefined} />;
         })}
       </View>
     </View>
@@ -103,6 +105,6 @@ const styles = StyleSheet.create({
   noirShell: { paddingHorizontal: 0, paddingTop: 0 },
   noirDock: { borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, shadowOpacity: 0 },
   iPadShell: { alignItems: "center", paddingHorizontal: 0, paddingTop: 5 },
-  iPadDock: { width: "58%", minWidth: 520, maxWidth: 740, height: 56 },
-  iPadCommand: { flexGrow: 0, flexShrink: 0, flexBasis: "20%" },
+  iPadDock: { height: 56 },
+  iPadCommand: { flex: 0, flexShrink: 0 },
 });
