@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { type ComponentProps, useEffect } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { haptic } from "@/lib/haptics";
@@ -26,12 +26,14 @@ function DockCommand({ command, focused, onPress, onLongPress }: { command: { la
   const cue = material.cue ?? theme.accent;
 
   useEffect(() => {
-    selected.value = withTiming(focused ? 1 : 0, { duration: sound.motionReduced ? 0 : 180 });
-  }, [focused, selected, sound.motionReduced]);
+    selected.value = withTiming(focused ? 1 : 0, { duration: sound.motionReduced ? 0 : isNoirPulse ? 240 : 180, easing: Easing.out(Easing.cubic) });
+  }, [focused, isNoirPulse, selected, sound.motionReduced]);
 
   const activePillStyle = useAnimatedStyle(() => ({
     opacity: selected.value,
-    transform: [{ scale: 0.9 + selected.value * 0.1 }, { translateY: (1 - selected.value) * 4 }],
+    transform: isNoirPulse
+      ? [{ scaleY: 0.16 + selected.value * 0.84 }, { translateY: (1 - selected.value) * 10 }]
+      : [{ scale: 0.9 + selected.value * 0.1 }, { translateY: (1 - selected.value) * 4 }],
   }));
 
   return (

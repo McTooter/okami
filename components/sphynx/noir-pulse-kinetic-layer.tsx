@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSegments } from "expo-router";
-import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
+import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 
 import { getNoirPulseMotionPlan } from "@/lib/noir-pulse-motion-core";
 import { useSphynx } from "@/lib/sphynx-store";
@@ -16,39 +16,65 @@ export function NoirPulseKineticLayer() {
   const { width, height } = useWindowDimensions();
   const segments = useSegments();
   const plan = getNoirPulseMotionPlan(material.id, sound.motionReduced);
-  const materialEntry = useSharedValue(0);
-  const routeSweep = useSharedValue(0);
+  const routeKey = segments.join("/");
+  const redField = useSharedValue(0);
+  const panelSweep = useSharedValue(0);
+  const seamSweep = useSharedValue(0);
+  const contentReveal = useSharedValue(0);
   const haze = useSharedValue(0);
 
   useEffect(() => {
-    materialEntry.value = 0;
-    routeSweep.value = 0;
+    redField.value = 0;
+    panelSweep.value = 0;
+    seamSweep.value = 0;
+    contentReveal.value = 0;
     haze.value = 0;
 
     if (!plan.enabled) return;
 
-    materialEntry.value = withTiming(1, {
-      duration: plan.entryDuration,
+    redField.value = withTiming(1, {
+      duration: plan.fieldEstablishDuration,
       easing: Easing.out(Easing.cubic),
     });
+    panelSweep.value = withDelay(plan.panelDelay, withTiming(1, {
+      duration: plan.panelSweepDuration,
+      easing: Easing.out(Easing.cubic),
+    }));
+    seamSweep.value = withDelay(plan.seamDelay, withTiming(1, {
+      duration: plan.seamSweepDuration,
+      easing: Easing.out(Easing.quad),
+    }));
+    contentReveal.value = withDelay(plan.contentRevealDelay, withTiming(1, {
+      duration: plan.contentRevealDuration,
+      easing: Easing.out(Easing.cubic),
+    }));
     haze.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0.28, { duration: 2200, easing: Easing.inOut(Easing.quad) }),
+        withDelay(plan.fieldEstablishDuration, withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.quad) })),
+        withTiming(0.28, { duration: 2600, easing: Easing.inOut(Easing.quad) }),
       ),
       -1,
       true,
     );
-  }, [plan.enabled, plan.entryDuration, materialEntry, routeSweep, haze]);
+  }, [contentReveal, haze, panelSweep, plan.contentRevealDelay, plan.contentRevealDuration, plan.enabled, plan.fieldEstablishDuration, plan.panelDelay, plan.panelSweepDuration, plan.seamDelay, plan.seamSweepDuration, redField, seamSweep]);
 
   useEffect(() => {
     if (!plan.enabled) return;
-    routeSweep.value = 0;
-    routeSweep.value = withTiming(1, {
-      duration: plan.routeSweepDuration,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [plan.enabled, plan.routeSweepDuration, routeSweep, segments]);
+    panelSweep.value = 0;
+    seamSweep.value = 0;
+    contentReveal.value = 0;
+    panelSweep.value = withDelay(plan.panelDelay, withTiming(1, { duration: plan.panelSweepDuration, easing: Easing.out(Easing.cubic) }));
+    seamSweep.value = withDelay(plan.seamDelay, withTiming(1, { duration: plan.seamSweepDuration, easing: Easing.out(Easing.quad) }));
+    contentReveal.value = withDelay(plan.contentRevealDelay, withTiming(1, { duration: plan.contentRevealDuration, easing: Easing.out(Easing.cubic) }));
+  }, [contentReveal, panelSweep, plan.contentRevealDelay, plan.contentRevealDuration, plan.enabled, plan.panelDelay, plan.panelSweepDuration, plan.seamDelay, plan.seamSweepDuration, routeKey, seamSweep]);
+
+  const redFieldStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(redField.value, [0, 0.7, 1], [0, 0.2, 0.12]),
+    transform: [
+      { translateX: interpolate(redField.value, [0, 1], [-width * 0.4, -width * 0.08]) },
+      { rotate: "-9deg" },
+    ],
+  }), [width]);
 
   const hazeStyle = useAnimatedStyle(() => ({
     opacity: plan.hazeOpacity + haze.value * 0.11,
@@ -60,28 +86,34 @@ export function NoirPulseKineticLayer() {
   }), [height, plan.hazeOpacity, width]);
 
   const blackCutStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(materialEntry.value, [0, 0.7, 1], [0, 0.18, 0.11]),
+    opacity: interpolate(panelSweep.value, [0, 0.16, 0.82, 1], [0, 0.52, 0.24, 0]),
     transform: [
-      { translateX: interpolate(materialEntry.value, [0, 1], [width * 0.74, -width * 0.26]) },
+      { translateX: interpolate(panelSweep.value, [0, 1], [width * 0.9, -width * 0.92]) },
       { rotate: "-14deg" },
     ],
   }), [width]);
 
   const whiteSeamStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(routeSweep.value, [0, 0.2, 0.72, 1], [0, 0.82, 0.06, 0]),
+    opacity: interpolate(seamSweep.value, [0, 0.12, 0.78, 1], [0, 1, 0.38, 0]),
     transform: [
-      { translateX: interpolate(routeSweep.value, [0, 1], [width * 0.94, -width * 1.08]) },
+      { translateX: interpolate(seamSweep.value, [0, 1], [width * 1.04, -width * 1.12]) },
       { rotate: "-14deg" },
     ],
   }), [width]);
+
+  const contentVeilStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(contentReveal.value, [0, 1], [0.12, 0]),
+  }));
 
   if (material.id !== "noir-pulse") return null;
 
   return (
     <View pointerEvents="none" style={styles.root}>
+      <Animated.View style={[styles.redField, { width: width * 0.76, height: height * 1.24 }, redFieldStyle]} />
       <Animated.View style={[styles.haze, { width: width * 0.7, height: height * 1.28 }, hazeStyle]} />
       <Animated.View style={[styles.blackCut, { width: width * 0.94, height: height * 1.24 }, blackCutStyle]} />
       <Animated.View style={[styles.whiteSeam, { height: height * 1.35 }, whiteSeamStyle]} />
+      <Animated.View style={[styles.contentVeil, contentVeilStyle]} />
     </View>
   );
 }
@@ -91,6 +123,12 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 40,
     overflow: "hidden",
+  },
+  redField: {
+    position: "absolute",
+    left: -116,
+    top: -78,
+    backgroundColor: "#A10D21",
   },
   haze: {
     position: "absolute",
@@ -112,5 +150,9 @@ const styles = StyleSheet.create({
     shadowColor: "#F7F2E8",
     shadowOpacity: 0.22,
     shadowRadius: 8,
+  },
+  contentVeil: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#050505",
   },
 });

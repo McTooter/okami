@@ -21,9 +21,9 @@ describe("Sphynx playback boundaries", () => {
     expect(selectLibraryRotation([], library)).toEqual([{ id: "a" }, { id: "b" }, { id: "c" }]);
   });
 
-  it("keeps Noir Pulse kinetic motion bounded and honors reduced-motion settings", () => {
-    expect(getNoirPulseMotionPlan("noir-pulse", false)).toMatchObject({ enabled: true, entryDuration: 520, routeSweepDuration: 390, hazeOpacity: 0.16 });
-    expect(getNoirPulseMotionPlan("noir-pulse", true)).toMatchObject({ enabled: false, entryDuration: 0, routeSweepDuration: 0, hazeOpacity: 0.09 });
+  it("keeps Noir Pulse kinetic motion staged, bounded, and reduced-motion aware", () => {
+    expect(getNoirPulseMotionPlan("noir-pulse", false)).toMatchObject({ enabled: true, fieldEstablishDuration: 360, panelDelay: 112, panelSweepDuration: 560, seamDelay: 308, seamSweepDuration: 380, contentRevealDelay: 418, contentRevealDuration: 220, hazeOpacity: 0.12 });
+    expect(getNoirPulseMotionPlan("noir-pulse", true)).toMatchObject({ enabled: false, fieldEstablishDuration: 0, panelDelay: 0, panelSweepDuration: 0, seamDelay: 0, seamSweepDuration: 0, contentRevealDelay: 0, contentRevealDuration: 0, hazeOpacity: 0.08 });
     expect(getNoirPulseMotionPlan("core", false)).toMatchObject({ enabled: false, hazeOpacity: 0 });
   });
 
