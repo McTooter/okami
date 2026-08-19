@@ -2,21 +2,23 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { FlatList, Image, StyleSheet, Text, View } from "react-native";
-import Animated, { Easing, FadeInDown, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { Easing, FadeInDown, FadeInRight, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { AnimatedAlbumArt } from "@/components/sphynx/animated-album-art";
-import { Metric, MiniPlayer, SectionHeading, SourceBadge, TrackRow } from "@/components/sphynx/controls";
+import { MiniPlayer, SourceBadge } from "@/components/sphynx/controls";
 import { PlaybackPulse } from "@/components/sphynx/listening-field";
 import { MotionPressable } from "@/components/sphynx/motion-pressable";
 import { ScreenContainer } from "@/components/screen-container";
 import { haptic } from "@/lib/haptics";
+import { formatLibraryCount, selectLibraryRotation } from "@/lib/okami-library-core";
 import { type Track, useSphynx } from "@/lib/sphynx-store";
 
 export default function LibraryScreen() {
   const router = useRouter();
-  const { theme, currentTrack, importedTracks, isImporting, isPlaying, localImportMessage, playTrack, importLocalTracks, tracks, sound } = useSphynx();
+  const { activeListeningProfile, currentTrack, importedTracks, isImporting, isPlaying, localImportMessage, pinnedAlbums, playTrack, importLocalTracks, sound, theme, tracks } = useSphynx();
   const scrollY = useSharedValue(0);
   const motionReduced = sound.motionReduced;
+  const rotation = selectLibraryRotation(pinnedAlbums, tracks);
 
   useEffect(() => {
     if (motionReduced) scrollY.value = withTiming(0, { duration: 100 });
@@ -47,43 +49,74 @@ export default function LibraryScreen() {
         data={tracks}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        renderItem={({ item, index }) => <TrackRow track={item} index={index} />}
+        renderItem={({ item, index }) => {
+          const active = currentTrack.id === item.id && isPlaying;
+          return (
+            <View style={[styles.trackRow, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.trackNumber, { color: active ? theme.accent : theme.muted }]}>{active ? "▮▮" : String(index + 1).padStart(2, "0")}</Text>
+              <MotionPressable
+                accessibilityLabel={`Play ${item.title}`}
+                emphasis="standard"
+                onPress={() => {
+                  haptic.light();
+                  playTrack(item);
+                  router.push("/now-playing" as never);
+                }}
+                style={styles.trackTapArea}
+              >
+                <View style={[styles.trackArtworkFrame, { borderColor: active ? item.accent : theme.border }]}>
+                  <AnimatedAlbumArt accent={item.accent} active={active} artwork={item.artwork} motionReduced={motionReduced} radius={10} size={43} />
+                </View>
+                <View style={styles.trackCopy}>
+                  <Text numberOfLines={1} style={[styles.trackTitle, { color: theme.foreground }]}>{item.title}</Text>
+                  <Text numberOfLines={1} style={[styles.trackMeta, { color: theme.muted }]}>{item.artist} · {item.album}</Text>
+                </View>
+              </MotionPressable>
+              <View style={styles.trackMetaRight}>
+                <Text style={[styles.duration, { color: theme.muted }]}>{item.duration}</Text>
+                <MotionPressable accessibilityLabel={`More options for ${item.title}`} emphasis="compact" hitSlop={10} onPress={haptic.selection} style={styles.moreButton}>
+                  <Ionicons color={theme.muted} name="ellipsis-horizontal" size={18} />
+                </MotionPressable>
+              </View>
+            </View>
+          );
+        }}
         onScroll={onScroll}
         scrollEventThrottle={16}
         ListHeaderComponent={
           <View>
-            <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(340).easing(Easing.out(Easing.cubic))} style={[styles.topLine, heroParallaxStyle]}>
-              <View>
+            <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(340).easing(Easing.out(Easing.cubic))} style={[styles.masthead, heroParallaxStyle]}>
+              <View style={styles.mastheadCopy}>
                 <View style={styles.brandRow}>
                   <Image accessibilityLabel="Okami rising-sun logo" source={require("../../assets/images/icon.png")} style={styles.brandMark} />
-                  <Text style={[styles.kicker, { color: theme.accent }]}>OKAMI</Text>
+                  <Text style={[styles.kicker, { color: theme.accent }]}>OKAMI / LIBRARY</Text>
                 </View>
-                <Text style={[styles.pageTitle, { color: theme.foreground }]}>Your music.</Text>
+                <Text style={[styles.pageTitle, { color: theme.foreground }]}>For {activeListeningProfile.name}.</Text>
+                <Text style={[styles.pageDeck, { color: theme.muted }]}>{activeListeningProfile.taste}</Text>
               </View>
-              <MotionPressable accessibilityLabel="Open search" onPress={() => router.navigate("/search" as never)} emphasis="compact" style={[styles.iconButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                <Ionicons name="search" size={20} color={theme.foreground} />
-              </MotionPressable>
+              <View style={[styles.identityChip, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+                <View style={[styles.identityDot, { backgroundColor: activeListeningProfile.cue }]} />
+                <Text numberOfLines={1} style={[styles.identityName, { color: theme.foreground }]}>{formatLibraryCount(tracks.length)}</Text>
+              </View>
             </Animated.View>
 
             <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(90).duration(360).easing(Easing.out(Easing.cubic))}>
-              <MotionPressable onPress={openNowPlaying} emphasis="primary" style={[styles.nowCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                <View style={styles.nowCardTop}>
-                  <View style={styles.nowStatus}><PlaybackPulse active={isPlaying} color={theme.accent} motionReduced={motionReduced} /><Text style={[styles.nowLabel, { color: theme.muted }]}>{isPlaying ? "PLAYING NOW" : "READY IN THE DECK"}</Text></View>
-                  <SourceBadge provider={currentTrack.provider} />
-                </View>
-                <View style={styles.nowContent}>
-                  <AnimatedAlbumArt artwork={currentTrack.artwork} size={92} radius={20} accent={currentTrack.accent} active={isPlaying} motionReduced={motionReduced} />
-                  <View style={styles.nowCopy}>
-                    <Text numberOfLines={2} style={[styles.nowTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
-                    <Text numberOfLines={1} style={[styles.nowArtist, { color: theme.muted }]}>{currentTrack.artist}</Text>
-                    <View style={styles.nowActionRow}>
-                      <View style={[styles.playPill, { backgroundColor: currentTrack.accent }]}>
-                        <Ionicons name={isPlaying ? "pause" : "play"} size={15} color={theme.accentInk} />
-                        <Text style={[styles.playPillText, { color: theme.accentInk }]}>{isPlaying ? "Resume" : "Play"}</Text>
-                      </View>
-                      <Text style={[styles.actionHint, { color: theme.muted }]}>Open player</Text>
+              <MotionPressable onPress={openNowPlaying} emphasis="primary" style={[styles.featureTile, { backgroundColor: theme.raised, borderColor: theme.border }]}>
+                <View style={[styles.featureSignal, { backgroundColor: theme.accent }]} />
+                <View style={styles.featureCopy}>
+                  <View style={styles.nowStatus}><PlaybackPulse active={isPlaying} color={theme.accent} motionReduced={motionReduced} /><Text style={[styles.nowLabel, { color: theme.muted }]}>{isPlaying ? "NOW PLAYING" : "NOW SELECTED"}</Text></View>
+                  <Text numberOfLines={2} style={[styles.featureTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
+                  <Text numberOfLines={1} style={[styles.featureArtist, { color: theme.muted }]}>{currentTrack.artist}</Text>
+                  <View style={styles.featureFooter}>
+                    <View style={[styles.openPlayerButton, { borderColor: theme.border }]}>
+                      <Text style={[styles.openPlayerText, { color: theme.foreground }]}>OPEN FIELD</Text>
+                      <Ionicons color={theme.accent} name="arrow-forward" size={15} />
                     </View>
+                    <SourceBadge provider={currentTrack.provider} />
                   </View>
+                </View>
+                <View style={[styles.featureArtworkRail, { borderColor: theme.border }]}>
+                  <AnimatedAlbumArt artwork={currentTrack.artwork} size={132} radius={18} accent={currentTrack.accent} active={isPlaying} motionReduced={motionReduced} />
                 </View>
               </MotionPressable>
             </Animated.View>
@@ -93,30 +126,68 @@ export default function LibraryScreen() {
                 accessibilityLabel="Import music files from this device"
                 disabled={isImporting}
                 onPress={() => { haptic.medium(); void importLocalTracks(); }}
-                emphasis="primary"
-                style={[styles.importCard, { backgroundColor: theme.raised, borderColor: theme.border }, isImporting && styles.disabled]}
+                emphasis="compact"
+                style={[styles.importStrip, { borderColor: theme.border }, isImporting && styles.disabled]}
               >
                 <View style={[styles.importIcon, { backgroundColor: theme.accent }]}>
-                  <Ionicons name="folder-open-outline" size={19} color={theme.accentInk} />
+                  <Ionicons name="add" size={20} color={theme.accentInk} />
                 </View>
                 <View style={styles.importCopy}>
-                  <Text style={[styles.importTitle, { color: theme.foreground }]}>{isImporting ? "Opening Files…" : "Import music files"}</Text>
-                  <Text style={[styles.importText, { color: theme.muted }]}>{localImportMessage ?? `${importedTracks.length} local ${importedTracks.length === 1 ? "track" : "tracks"} stored on this iPhone`}</Text>
+                  <Text style={[styles.importTitle, { color: theme.foreground }]}>{isImporting ? "Opening file picker…" : "Add from this iPhone"}</Text>
+                  <Text style={[styles.importText, { color: theme.muted }]}>{localImportMessage ?? `${formatLibraryCount(importedTracks.length)} local tracks in your archive`}</Text>
                 </View>
-                <Ionicons name="add" size={22} color={theme.accent} />
+                <Ionicons name="arrow-forward" size={18} color={theme.accent} />
               </MotionPressable>
             </Animated.View>
 
-            <View style={[styles.metricBand, { borderColor: theme.border }]}>
-              <Metric value={String(tracks.length)} label="Saved tracks" />
-              <Metric value={String(importedTracks.length).padStart(2, "0")} label="On this iPhone" />
-              <Metric value="02" label="Sources" emphasis />
+            <View style={styles.rotationHeading}>
+              <View>
+                <Text style={[styles.eyebrow, { color: theme.accent }]}>ON ROTATION</Text>
+                <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Three from the stack</Text>
+              </View>
+              <Text style={[styles.rotationCount, { color: theme.muted }]}>{formatLibraryCount(rotation.length)} / {formatLibraryCount(tracks.length)}</Text>
             </View>
 
-            <SectionHeading eyebrow="Recently handled" title="Library rotation" action="Sort" onAction={haptic.selection} />
+            <FlatList
+              contentContainerStyle={styles.rotationList}
+              data={rotation}
+              horizontal
+              keyExtractor={(item) => `rotation-${item.id}`}
+              renderItem={({ item, index }) => (
+                <Animated.View entering={motionReduced ? undefined : FadeInRight.delay(210 + index * 55).duration(330)}>
+                  <MotionPressable
+                    accessibilityLabel={`Play ${item.title}`}
+                    emphasis="primary"
+                    onPress={() => {
+                      haptic.light();
+                      playTrack(item);
+                      router.push("/now-playing" as never);
+                    }}
+                    style={styles.rotationCard}
+                  >
+                    <Text style={[styles.rotationIndex, { color: theme.muted }]}>{formatLibraryCount(index + 1)}</Text>
+                    <AnimatedAlbumArt accent={item.accent} active={currentTrack.id === item.id && isPlaying} artwork={item.artwork} motionReduced={motionReduced} radius={16} size={112} />
+                    <Text numberOfLines={1} style={[styles.rotationTitle, { color: theme.foreground }]}>{item.title}</Text>
+                    <Text numberOfLines={1} style={[styles.rotationMeta, { color: theme.muted }]}>{item.artist}</Text>
+                  </MotionPressable>
+                </Animated.View>
+              )}
+              showsHorizontalScrollIndicator={false}
+            />
+
+            <View style={[styles.queueHeader, { borderTopColor: theme.border }]}>
+              <View>
+                <Text style={[styles.eyebrow, { color: theme.accent }]}>QUEUE INDEX</Text>
+                <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Saved measures</Text>
+              </View>
+              <MotionPressable accessibilityLabel="Sort library" emphasis="compact" onPress={haptic.selection} style={[styles.sortControl, { borderColor: theme.border }]}>
+                <Ionicons color={theme.foreground} name="swap-vertical" size={14} />
+                <Text style={[styles.sortLabel, { color: theme.foreground }]}>SORT</Text>
+              </MotionPressable>
+            </View>
           </View>
         }
-        ListFooterComponent={<View style={{ height: 82 }} />}
+        ListFooterComponent={<View style={{ height: 104 }} />}
         showsVerticalScrollIndicator={false}
       />
       <MiniPlayer />
@@ -125,30 +196,54 @@ export default function LibraryScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: 20, paddingTop: 18 },
-  topLine: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 },
-  brandRow: { flexDirection: "row", alignItems: "center", height: 27, marginBottom: 5, gap: 3 },
-  brandMark: { width: 27, height: 27, borderRadius: 7 },
-  kicker: { fontSize: 10, letterSpacing: 1.5, fontWeight: "800" },
-  pageTitle: { fontSize: 31, lineHeight: 37, letterSpacing: -1.15, fontWeight: "800" },
-  iconButton: { width: 44, height: 44, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
-  nowCard: { borderRadius: 23, borderWidth: StyleSheet.hairlineWidth, padding: 14, marginBottom: 16 },
-  importCard: { minHeight: 72, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", paddingHorizontal: 13, gap: 11, marginBottom: 18 },
-  importIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  list: { paddingHorizontal: 18, paddingTop: 14 },
+  masthead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 27 },
+  mastheadCopy: { flex: 1, minWidth: 0, paddingRight: 10 },
+  brandRow: { flexDirection: "row", alignItems: "center", height: 28, marginBottom: 10, gap: 7 },
+  brandMark: { width: 23, height: 23, borderRadius: 7 },
+  kicker: { fontSize: 10, lineHeight: 13, letterSpacing: 1.6, fontWeight: "900" },
+  pageTitle: { fontSize: 38, lineHeight: 42, letterSpacing: -1.8, fontWeight: "800" },
+  pageDeck: { fontSize: 13, lineHeight: 18, marginTop: 6, fontWeight: "500" },
+  identityChip: { marginTop: 1, width: 48, height: 48, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center", gap: 3 },
+  identityDot: { width: 10, height: 10, borderRadius: 999 },
+  identityName: { fontSize: 10, fontWeight: "900", letterSpacing: 0.7, fontVariant: ["tabular-nums"] },
+  featureTile: { minHeight: 174, borderRadius: 28, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", overflow: "hidden", marginBottom: 13 },
+  featureSignal: { position: "absolute", left: 0, top: 20, bottom: 20, width: 3, borderTopRightRadius: 3, borderBottomRightRadius: 3 },
+  featureCopy: { flex: 1, minWidth: 0, paddingTop: 18, paddingBottom: 15, paddingLeft: 20, paddingRight: 8, justifyContent: "space-between" },
+  nowStatus: { flexDirection: "row", alignItems: "center", gap: 7 },
+  nowLabel: { fontSize: 9, letterSpacing: 1.25, fontWeight: "900" },
+  featureTitle: { fontSize: 25, lineHeight: 28, letterSpacing: -0.9, fontWeight: "800", marginTop: 10 },
+  featureArtist: { fontSize: 12, lineHeight: 16, marginTop: 4, fontWeight: "600" },
+  featureFooter: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10 },
+  openPlayerButton: { height: 28, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 5 },
+  openPlayerText: { fontSize: 9, fontWeight: "900", letterSpacing: 0.75 },
+  featureArtworkRail: { width: 146, borderLeftWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  importStrip: { minHeight: 66, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", paddingHorizontal: 2, gap: 10, marginBottom: 31 },
+  importIcon: { width: 33, height: 33, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   importCopy: { flex: 1, minWidth: 0 },
-  importTitle: { fontSize: 14, fontWeight: "800" },
-  importText: { fontSize: 11, lineHeight: 15, marginTop: 3 },
-  nowCardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 13 },
-  nowStatus: { flexDirection: "row", alignItems: "center", gap: 6 },
-  nowLabel: { fontSize: 10, letterSpacing: 1.15, fontWeight: "800" },
-  nowContent: { flexDirection: "row", gap: 14, alignItems: "center" },
-  nowCopy: { flex: 1, minWidth: 0 },
-  nowTitle: { fontSize: 21, lineHeight: 25, fontWeight: "800", letterSpacing: -0.45 },
-  nowArtist: { fontSize: 13, lineHeight: 18, marginTop: 4 },
-  nowActionRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
-  playPill: { height: 30, borderRadius: 15, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", gap: 5 },
-  playPillText: { fontSize: 12, fontWeight: "800" },
-  actionHint: { fontSize: 11, fontWeight: "600" },
-  metricBand: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 13, marginBottom: 26 },
+  importTitle: { fontSize: 13, lineHeight: 17, fontWeight: "800" },
+  importText: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  rotationHeading: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 14 },
+  eyebrow: { fontSize: 9, lineHeight: 12, letterSpacing: 1.35, fontWeight: "900", marginBottom: 4 },
+  sectionTitle: { fontSize: 22, lineHeight: 26, letterSpacing: -0.75, fontWeight: "800" },
+  rotationCount: { fontSize: 10, lineHeight: 14, fontWeight: "800", letterSpacing: 0.9, fontVariant: ["tabular-nums"] },
+  rotationList: { gap: 12, paddingRight: 18, paddingBottom: 34 },
+  rotationCard: { width: 123, gap: 7 },
+  rotationIndex: { fontSize: 9, lineHeight: 11, fontWeight: "900", letterSpacing: 1 },
+  rotationTitle: { fontSize: 13, lineHeight: 16, fontWeight: "800", letterSpacing: -0.2, marginTop: 1 },
+  rotationMeta: { fontSize: 10, lineHeight: 13, fontWeight: "500" },
+  queueHeader: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 21, marginBottom: 7, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+  sortControl: { height: 30, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 4 },
+  sortLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.75 },
+  trackRow: { minHeight: 70, flexDirection: "row", alignItems: "center", borderBottomWidth: StyleSheet.hairlineWidth },
+  trackNumber: { width: 30, fontSize: 10, fontWeight: "900", letterSpacing: 0.7, fontVariant: ["tabular-nums"] },
+  trackTapArea: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 },
+  trackArtworkFrame: { borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, padding: 1 },
+  trackCopy: { flex: 1, minWidth: 0 },
+  trackTitle: { fontSize: 14, lineHeight: 18, fontWeight: "800", letterSpacing: -0.2 },
+  trackMeta: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  trackMetaRight: { flexDirection: "row", alignItems: "center", gap: 1, marginLeft: 6 },
+  duration: { fontSize: 10, fontWeight: "700", fontVariant: ["tabular-nums"] },
+  moreButton: { width: 30, height: 38, alignItems: "center", justifyContent: "center" },
   disabled: { opacity: 0.55 },
 });

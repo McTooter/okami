@@ -7,10 +7,19 @@ import { buildDspPlaybackConfiguration, isDspProcessingEnabled } from "../lib/ds
 import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/listening-field-core";
 import { findListeningProfile, mergeListeningProfiles, movePinnedTrackId, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders, reorderPinnedTrackIds } from "../lib/listening-profile-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
+import { formatLibraryCount, selectLibraryRotation } from "../lib/okami-library-core";
 import { applyQueueOrder, moveQueueId } from "../lib/queue-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
 describe("Sphynx playback boundaries", () => {
+  it("gives the Library a concise live count and makes identity-pinned tracks lead the rotation", () => {
+    const library = [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }];
+    expect(formatLibraryCount(6)).toBe("06");
+    expect(formatLibraryCount(-2.4)).toBe("00");
+    expect(selectLibraryRotation([{ id: "pinned" }], library)).toEqual([{ id: "pinned" }]);
+    expect(selectLibraryRotation([], library)).toEqual([{ id: "a" }, { id: "b" }, { id: "c" }]);
+  });
+
   it("clamps user-controlled progress to the valid playback range", () => {
     expect(clamp(-0.2, 0, 1)).toBe(0);
     expect(clamp(0.42, 0, 1)).toBe(0.42);

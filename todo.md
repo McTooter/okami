@@ -101,3 +101,5 @@
 - [x] Re-run the public SideStore IPA workflow and confirm the artifact uploads successfully.
 - [x] Repair Expo SDK 54 module lifecycle and AVFoundation compatibility errors in the native DSP module uncovered by the GitHub iOS build.
 - [x] Replace the unavailable iOS dynamics-processor Swift wrapper with the supported Audio Unit effect bridge and validate the SideStore IPA workflow.
+- [x] Redesign the iOS tab bar and Library screen from scratch with an original premium component-driven aesthetic.
+- [x] Investigate the reported GitHub Actions annotation and ensure the SideStore IPA artifact is publicly retrievable.

@@ -1,33 +1,15 @@
 import { Tabs } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { HapticTab } from "@/components/haptic-tab";
+import { OkamiCommandDock } from "@/components/sphynx/okami-command-dock";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Platform } from "react-native";
-import { useSphynx } from "@/lib/sphynx-store";
 
 export default function TabLayout() {
-  const { material, theme } = useSphynx();
-  const materialCue = material.cue ?? theme.accent;
-  const insets = useSafeAreaInsets();
-  const bottomPadding = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 8);
-  const tabBarHeight = 56 + bottomPadding;
-
   return (
     <Tabs
+      tabBar={(props) => <OkamiCommandDock {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: materialCue,
-        tabBarInactiveTintColor: theme.muted,
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarStyle: {
-          paddingTop: 8,
-          paddingBottom: bottomPadding,
-          height: tabBarHeight,
-          backgroundColor: theme.tabBar,
-          borderTopColor: materialCue,
-          borderTopWidth: 0.5,
-        },
+        tabBarHideOnKeyboard: true,
       }}
     >
       <Tabs.Screen
