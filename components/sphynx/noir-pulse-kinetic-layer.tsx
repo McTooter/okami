@@ -79,11 +79,9 @@ export function NoirPulseKineticLayer() {
 
   return (
     <View pointerEvents="none" style={styles.root}>
-      <Animated.View style={[styles.haze, { width: width * 0.84, height: height * 1.18 }, hazeStyle]} />
-      <Animated.View style={[styles.blackCut, { width: width * 1.06, height: height * 1.24 }, blackCutStyle]} />
+      <Animated.View style={[styles.haze, { width: width * 0.7, height: height * 1.28 }, hazeStyle]} />
+      <Animated.View style={[styles.blackCut, { width: width * 0.94, height: height * 1.24 }, blackCutStyle]} />
       <Animated.View style={[styles.whiteSeam, { height: height * 1.35 }, whiteSeamStyle]} />
-      <View style={[styles.signalTick, { top: Math.max(72, height * 0.14) }]} />
-      <View style={[styles.signalTick, styles.signalTickLower, { top: Math.max(310, height * 0.62) }]} />
     </View>
   );
 }
@@ -96,40 +94,23 @@ const styles = StyleSheet.create({
   },
   haze: {
     position: "absolute",
-    left: -70,
-    top: -72,
-    backgroundColor: "#D82C2A",
-    borderTopRightRadius: 220,
-    borderBottomRightRadius: 220,
+    left: -90,
+    top: -100,
+    backgroundColor: "#8F0A18",
   },
   blackCut: {
     position: "absolute",
-    right: -500,
-    top: -84,
-    backgroundColor: "#070607",
+    right: -390,
+    top: -104,
+    backgroundColor: "#050505",
   },
   whiteSeam: {
     position: "absolute",
     top: -110,
-    width: 8,
+    width: 3,
     backgroundColor: "#F7F2E8",
     shadowColor: "#F7F2E8",
-    shadowOpacity: 0.42,
-    shadowRadius: 14,
-  },
-  signalTick: {
-    position: "absolute",
-    left: 18,
-    width: 18,
-    height: 3,
-    backgroundColor: "#F05A47",
-    opacity: 0.8,
-  },
-  signalTickLower: {
-    left: undefined,
-    right: 20,
-    width: 28,
-    backgroundColor: "#F7F2E8",
-    opacity: 0.42,
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
   },
 });

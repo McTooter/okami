@@ -107,3 +107,5 @@
 - [x] Deliver the generated Okami mockup through a directly accessible attachment after the temporary link failed.
 - [x] Generate and deliver a high-fidelity Okami Library mockup in the original Noir Pulse material direction.
 - [x] Replace the static Noir Pulse treatment with original smooth diagonal wipes, red-haze layers, and black-white cut-panel transitions inspired by the supplied motion reference.
+- [x] Generate and attach a directly viewable visual preview of the refined Noir Pulse kinetic material direction.
+- [x] Replace the rejected generic Noir Pulse treatment with a restrained full-bleed kinetic composition and a minimal Library hierarchy.

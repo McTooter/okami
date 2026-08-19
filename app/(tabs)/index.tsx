@@ -15,9 +15,10 @@ import { type Track, useSphynx } from "@/lib/sphynx-store";
 
 export default function LibraryScreen() {
   const router = useRouter();
-  const { activeListeningProfile, currentTrack, importedTracks, isImporting, isPlaying, localImportMessage, pinnedAlbums, playTrack, importLocalTracks, sound, theme, tracks } = useSphynx();
+  const { activeListeningProfile, currentTrack, importedTracks, isImporting, isPlaying, localImportMessage, material, pinnedAlbums, playTrack, importLocalTracks, sound, theme, tracks } = useSphynx();
   const scrollY = useSharedValue(0);
   const motionReduced = sound.motionReduced;
+  const isNoirPulse = material.id === "noir-pulse";
   const rotation = selectLibraryRotation(pinnedAlbums, tracks);
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function LibraryScreen() {
       <FlatList<Track>
         data={tracks}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, isNoirPulse && styles.noirList]}
         renderItem={({ item, index }) => {
           const active = currentTrack.id === item.id && isPlaying;
           return (
@@ -64,8 +65,8 @@ export default function LibraryScreen() {
                 }}
                 style={styles.trackTapArea}
               >
-                <View style={[styles.trackArtworkFrame, { borderColor: active ? item.accent : theme.border }]}>
-                  <AnimatedAlbumArt accent={item.accent} active={active} artwork={item.artwork} motionReduced={motionReduced} radius={10} size={43} />
+                <View style={[styles.trackArtworkFrame, isNoirPulse && styles.noirTrackArtworkFrame, { borderColor: active ? item.accent : theme.border }]}>
+                  <AnimatedAlbumArt accent={item.accent} active={active} artwork={item.artwork} motionReduced={motionReduced} radius={isNoirPulse ? 0 : 10} size={43} />
                 </View>
                 <View style={styles.trackCopy}>
                   <Text numberOfLines={1} style={[styles.trackTitle, { color: theme.foreground }]}>{item.title}</Text>
@@ -85,38 +86,38 @@ export default function LibraryScreen() {
         scrollEventThrottle={16}
         ListHeaderComponent={
           <View>
-            <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(340).easing(Easing.out(Easing.cubic))} style={[styles.masthead, heroParallaxStyle]}>
+            <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(340).easing(Easing.out(Easing.cubic))} style={[styles.masthead, isNoirPulse && styles.noirMasthead, heroParallaxStyle]}>
               <View style={styles.mastheadCopy}>
                 <View style={styles.brandRow}>
-                  <Image accessibilityLabel="Okami rising-sun logo" source={require("../../assets/images/icon.png")} style={styles.brandMark} />
+                  <Image accessibilityLabel="Okami rising-sun logo" source={require("../../assets/images/icon.png")} style={[styles.brandMark, isNoirPulse && styles.noirBrandMark]} />
                   <Text style={[styles.kicker, { color: theme.accent }]}>OKAMI / LIBRARY</Text>
                 </View>
-                <Text style={[styles.pageTitle, { color: theme.foreground }]}>For {activeListeningProfile.name}.</Text>
+                <Text style={[styles.pageTitle, isNoirPulse && styles.noirPageTitle, { color: theme.foreground }]}>{isNoirPulse ? "ARCHIVE /" : `For ${activeListeningProfile.name}.`}</Text>
                 <Text style={[styles.pageDeck, { color: theme.muted }]}>{activeListeningProfile.taste}</Text>
               </View>
-              <View style={[styles.identityChip, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+              <View style={[styles.identityChip, isNoirPulse && styles.noirIdentityChip, { borderColor: theme.border, backgroundColor: theme.surface }]}>
                 <View style={[styles.identityDot, { backgroundColor: activeListeningProfile.cue }]} />
                 <Text numberOfLines={1} style={[styles.identityName, { color: theme.foreground }]}>{formatLibraryCount(tracks.length)}</Text>
               </View>
             </Animated.View>
 
             <Animated.View entering={motionReduced ? undefined : FadeInDown.delay(90).duration(360).easing(Easing.out(Easing.cubic))}>
-              <MotionPressable onPress={openNowPlaying} emphasis="primary" style={[styles.featureTile, { backgroundColor: theme.raised, borderColor: theme.border }]}>
+              <MotionPressable onPress={openNowPlaying} emphasis="primary" style={[styles.featureTile, isNoirPulse && styles.noirFeatureTile, { backgroundColor: theme.raised, borderColor: theme.border }]}>
                 <View style={[styles.featureSignal, { backgroundColor: theme.accent }]} />
                 <View style={styles.featureCopy}>
                   <View style={styles.nowStatus}><PlaybackPulse active={isPlaying} color={theme.accent} motionReduced={motionReduced} /><Text style={[styles.nowLabel, { color: theme.muted }]}>{isPlaying ? "NOW PLAYING" : "NOW SELECTED"}</Text></View>
                   <Text numberOfLines={2} style={[styles.featureTitle, { color: theme.foreground }]}>{currentTrack.title}</Text>
                   <Text numberOfLines={1} style={[styles.featureArtist, { color: theme.muted }]}>{currentTrack.artist}</Text>
                   <View style={styles.featureFooter}>
-                    <View style={[styles.openPlayerButton, { borderColor: theme.border }]}>
+                    <View style={[styles.openPlayerButton, isNoirPulse && styles.noirOpenPlayerButton, { borderColor: theme.border }]}>
                       <Text style={[styles.openPlayerText, { color: theme.foreground }]}>OPEN FIELD</Text>
                       <Ionicons color={theme.accent} name="arrow-forward" size={15} />
                     </View>
                     <SourceBadge provider={currentTrack.provider} />
                   </View>
                 </View>
-                <View style={[styles.featureArtworkRail, { borderColor: theme.border }]}>
-                  <AnimatedAlbumArt artwork={currentTrack.artwork} size={132} radius={18} accent={currentTrack.accent} active={isPlaying} motionReduced={motionReduced} />
+                <View style={[styles.featureArtworkRail, isNoirPulse && styles.noirFeatureArtworkRail, { borderColor: theme.border }]}>
+                  <AnimatedAlbumArt artwork={currentTrack.artwork} size={isNoirPulse ? 116 : 132} radius={isNoirPulse ? 0 : 18} accent={currentTrack.accent} active={isPlaying} motionReduced={motionReduced} />
                 </View>
               </MotionPressable>
             </Animated.View>
@@ -127,9 +128,9 @@ export default function LibraryScreen() {
                 disabled={isImporting}
                 onPress={() => { haptic.medium(); void importLocalTracks(); }}
                 emphasis="compact"
-                style={[styles.importStrip, { borderColor: theme.border }, isImporting && styles.disabled]}
+                style={[styles.importStrip, isNoirPulse && styles.noirImportStrip, { borderColor: theme.border }, isImporting && styles.disabled]}
               >
-                <View style={[styles.importIcon, { backgroundColor: theme.accent }]}>
+                <View style={[styles.importIcon, isNoirPulse && styles.noirImportIcon, { backgroundColor: theme.accent }]}>
                   <Ionicons name="add" size={20} color={theme.accentInk} />
                 </View>
                 <View style={styles.importCopy}>
@@ -163,10 +164,10 @@ export default function LibraryScreen() {
                       playTrack(item);
                       router.push("/now-playing" as never);
                     }}
-                    style={styles.rotationCard}
+                    style={[styles.rotationCard, isNoirPulse && styles.noirRotationCard]}
                   >
                     <Text style={[styles.rotationIndex, { color: theme.muted }]}>{formatLibraryCount(index + 1)}</Text>
-                    <AnimatedAlbumArt accent={item.accent} active={currentTrack.id === item.id && isPlaying} artwork={item.artwork} motionReduced={motionReduced} radius={16} size={112} />
+                    <AnimatedAlbumArt accent={item.accent} active={currentTrack.id === item.id && isPlaying} artwork={item.artwork} motionReduced={motionReduced} radius={isNoirPulse ? 0 : 16} size={112} />
                     <Text numberOfLines={1} style={[styles.rotationTitle, { color: theme.foreground }]}>{item.title}</Text>
                     <Text numberOfLines={1} style={[styles.rotationMeta, { color: theme.muted }]}>{item.artist}</Text>
                   </MotionPressable>
@@ -180,7 +181,7 @@ export default function LibraryScreen() {
                 <Text style={[styles.eyebrow, { color: theme.accent }]}>QUEUE INDEX</Text>
                 <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Saved measures</Text>
               </View>
-              <MotionPressable accessibilityLabel="Sort library" emphasis="compact" onPress={haptic.selection} style={[styles.sortControl, { borderColor: theme.border }]}>
+              <MotionPressable accessibilityLabel="Sort library" emphasis="compact" onPress={haptic.selection} style={[styles.sortControl, isNoirPulse && styles.noirSortControl, { borderColor: theme.border }]}>
                 <Ionicons color={theme.foreground} name="swap-vertical" size={14} />
                 <Text style={[styles.sortLabel, { color: theme.foreground }]}>SORT</Text>
               </MotionPressable>
@@ -197,17 +198,23 @@ export default function LibraryScreen() {
 
 const styles = StyleSheet.create({
   list: { paddingHorizontal: 18, paddingTop: 14 },
+  noirList: { paddingHorizontal: 16, paddingTop: 8 },
   masthead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 27 },
+  noirMasthead: { marginBottom: 24 },
   mastheadCopy: { flex: 1, minWidth: 0, paddingRight: 10 },
   brandRow: { flexDirection: "row", alignItems: "center", height: 28, marginBottom: 10, gap: 7 },
   brandMark: { width: 23, height: 23, borderRadius: 7 },
+  noirBrandMark: { borderRadius: 0, width: 18, height: 18 },
   kicker: { fontSize: 10, lineHeight: 13, letterSpacing: 1.6, fontWeight: "900" },
   pageTitle: { fontSize: 38, lineHeight: 42, letterSpacing: -1.8, fontWeight: "800" },
+  noirPageTitle: { fontSize: 47, lineHeight: 48, letterSpacing: -3.2, fontWeight: "900" },
   pageDeck: { fontSize: 13, lineHeight: 18, marginTop: 6, fontWeight: "500" },
   identityChip: { marginTop: 1, width: 48, height: 48, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center", gap: 3 },
+  noirIdentityChip: { borderRadius: 0, width: 42, height: 42 },
   identityDot: { width: 10, height: 10, borderRadius: 999 },
   identityName: { fontSize: 10, fontWeight: "900", letterSpacing: 0.7, fontVariant: ["tabular-nums"] },
   featureTile: { minHeight: 174, borderRadius: 28, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", overflow: "hidden", marginBottom: 13 },
+  noirFeatureTile: { minHeight: 156, borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, backgroundColor: "#060606" },
   featureSignal: { position: "absolute", left: 0, top: 20, bottom: 20, width: 3, borderTopRightRadius: 3, borderBottomRightRadius: 3 },
   featureCopy: { flex: 1, minWidth: 0, paddingTop: 18, paddingBottom: 15, paddingLeft: 20, paddingRight: 8, justifyContent: "space-between" },
   nowStatus: { flexDirection: "row", alignItems: "center", gap: 7 },
@@ -216,10 +223,14 @@ const styles = StyleSheet.create({
   featureArtist: { fontSize: 12, lineHeight: 16, marginTop: 4, fontWeight: "600" },
   featureFooter: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10 },
   openPlayerButton: { height: 28, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 5 },
+  noirOpenPlayerButton: { borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, paddingHorizontal: 0 },
   openPlayerText: { fontSize: 9, fontWeight: "900", letterSpacing: 0.75 },
   featureArtworkRail: { width: 146, borderLeftWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
+  noirFeatureArtworkRail: { width: 126, borderLeftWidth: 0, alignItems: "flex-end", paddingRight: 10 },
   importStrip: { minHeight: 66, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", paddingHorizontal: 2, gap: 10, marginBottom: 31 },
+  noirImportStrip: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 8, paddingTop: 1 },
   importIcon: { width: 33, height: 33, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  noirImportIcon: { borderRadius: 0 },
   importCopy: { flex: 1, minWidth: 0 },
   importTitle: { fontSize: 13, lineHeight: 17, fontWeight: "800" },
   importText: { fontSize: 11, lineHeight: 15, marginTop: 2 },
@@ -229,16 +240,19 @@ const styles = StyleSheet.create({
   rotationCount: { fontSize: 10, lineHeight: 14, fontWeight: "800", letterSpacing: 0.9, fontVariant: ["tabular-nums"] },
   rotationList: { gap: 12, paddingRight: 18, paddingBottom: 34 },
   rotationCard: { width: 123, gap: 7 },
+  noirRotationCard: { width: 116, gap: 6 },
   rotationIndex: { fontSize: 9, lineHeight: 11, fontWeight: "900", letterSpacing: 1 },
   rotationTitle: { fontSize: 13, lineHeight: 16, fontWeight: "800", letterSpacing: -0.2, marginTop: 1 },
   rotationMeta: { fontSize: 10, lineHeight: 13, fontWeight: "500" },
   queueHeader: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 21, marginBottom: 7, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   sortControl: { height: 30, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 4 },
+  noirSortControl: { borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, paddingHorizontal: 0 },
   sortLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.75 },
   trackRow: { minHeight: 70, flexDirection: "row", alignItems: "center", borderBottomWidth: StyleSheet.hairlineWidth },
   trackNumber: { width: 30, fontSize: 10, fontWeight: "900", letterSpacing: 0.7, fontVariant: ["tabular-nums"] },
   trackTapArea: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 },
   trackArtworkFrame: { borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, padding: 1 },
+  noirTrackArtworkFrame: { borderRadius: 0, padding: 0 },
   trackCopy: { flex: 1, minWidth: 0 },
   trackTitle: { fontSize: 14, lineHeight: 18, fontWeight: "800", letterSpacing: -0.2 },
   trackMeta: { fontSize: 11, lineHeight: 15, marginTop: 2 },

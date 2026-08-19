@@ -21,6 +21,7 @@ const COMMANDS: Record<string, { label: string; icon: IconName }> = {
 
 function DockCommand({ command, focused, onPress, onLongPress }: { command: { label: string; icon: IconName }; focused: boolean; onPress: () => void; onLongPress: () => void }) {
   const { material, sound, theme } = useSphynx();
+  const isNoirPulse = material.id === "noir-pulse";
   const selected = useSharedValue(focused ? 1 : 0);
   const cue = material.cue ?? theme.accent;
 
@@ -43,10 +44,10 @@ function DockCommand({ command, focused, onPress, onLongPress }: { command: { la
       emphasis="compact"
       style={styles.command}
     >
-      <Animated.View pointerEvents="none" style={[styles.activePill, { backgroundColor: cue }, activePillStyle]} />
+      <Animated.View pointerEvents="none" style={[styles.activePill, isNoirPulse && styles.noirActiveMarker, { backgroundColor: cue }, activePillStyle]} />
       <View style={styles.commandContent}>
-        <Ionicons color={focused ? theme.accentInk : theme.muted} name={command.icon} size={20} />
-        <Text numberOfLines={1} style={[styles.commandLabel, { color: focused ? theme.accentInk : theme.muted }]}>
+        <Ionicons color={focused ? (isNoirPulse ? theme.foreground : theme.accentInk) : theme.muted} name={command.icon} size={20} />
+        <Text numberOfLines={1} style={[styles.commandLabel, { color: focused ? (isNoirPulse ? theme.foreground : theme.accentInk) : theme.muted }]}>
           {command.label}
         </Text>
       </View>
@@ -57,13 +58,14 @@ function DockCommand({ command, focused, onPress, onLongPress }: { command: { la
 /** A focused, original navigation dock that preserves native tab semantics. */
 export function OkamiCommandDock({ state, descriptors, navigation }: BottomTabBarProps) {
   const { material, theme } = useSphynx();
+  const isNoirPulse = material.id === "noir-pulse";
   const insets = useSafeAreaInsets();
   const cue = material.cue ?? theme.accent;
   const bottomInset = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 10);
 
   return (
-    <View style={[styles.shell, { paddingBottom: bottomInset }]}>
-      <View style={[styles.dock, { backgroundColor: theme.raised, borderColor: theme.border }]}>
+    <View style={[styles.shell, isNoirPulse && styles.noirShell, { paddingBottom: bottomInset }]}>
+      <View style={[styles.dock, isNoirPulse && styles.noirDock, { backgroundColor: theme.raised, borderColor: theme.border }]}>
         <View pointerEvents="none" style={[styles.signalLine, { backgroundColor: cue }]} />
         {state.routes.map((route, index) => {
           const focused = state.index === index;
@@ -90,6 +92,9 @@ const styles = StyleSheet.create({
   signalLine: { position: "absolute", top: 0, left: 28, right: 28, height: 1, opacity: 0.8 },
   command: { flex: 1, minWidth: 0, marginVertical: 6, borderRadius: 18, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   activePill: { ...StyleSheet.absoluteFillObject, borderRadius: 18 },
+  noirActiveMarker: { left: 0, right: undefined, top: 10, bottom: 10, width: 2, borderRadius: 0 },
   commandContent: { alignItems: "center", justifyContent: "center", gap: 3 },
   commandLabel: { fontSize: 9, lineHeight: 11, fontWeight: "800", letterSpacing: 0.18 },
+  noirShell: { paddingHorizontal: 0, paddingTop: 0 },
+  noirDock: { borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, shadowOpacity: 0 },
 });
