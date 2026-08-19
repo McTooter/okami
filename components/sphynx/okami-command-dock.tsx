@@ -111,5 +111,5 @@ const styles = StyleSheet.create({
   noirDock: { borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, shadowOpacity: 0 },
   iPadShell: { alignItems: "center", paddingHorizontal: 0, paddingTop: 5 },
   iPadDock: { height: 56 },
-  iPadCommandSlot: { flexGrow: 0, flexShrink: 0 },
+  iPadCommandSlot: { flex: 0, flexGrow: 0, flexShrink: 0, flexBasis: "auto" },
 });
