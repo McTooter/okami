@@ -20,7 +20,7 @@ const COMMANDS: Record<string, { label: string; icon: IconName }> = {
   profile: { label: "Identity", icon: "person-outline" },
 };
 
-function DockCommand({ command, focused, onPress, onLongPress, wide, width }: { command: { label: string; icon: IconName }; focused: boolean; onPress: () => void; onLongPress: () => void; wide: boolean; width?: number }) {
+function DockCommand({ command, focused, onPress, onLongPress }: { command: { label: string; icon: IconName }; focused: boolean; onPress: () => void; onLongPress: () => void }) {
   const { material, sound, theme } = useSphynx();
   const isNoirPulse = material.id === "noir-pulse";
   const selected = useSharedValue(focused ? 1 : 0);
@@ -45,7 +45,7 @@ function DockCommand({ command, focused, onPress, onLongPress, wide, width }: { 
       onLongPress={onLongPress}
       onPress={onPress}
       emphasis="compact"
-      style={[styles.command, wide && styles.iPadCommand, wide && width ? { width } : undefined]}
+      style={styles.command}
     >
       <Animated.View pointerEvents="none" style={[styles.activePill, isNoirPulse && styles.noirActiveMarker, { backgroundColor: cue }, activePillStyle]} />
       <View style={styles.commandContent}>
@@ -86,7 +86,11 @@ export function OkamiCommandDock({ state, descriptors, navigation }: BottomTabBa
           };
           const onLongPress = () => navigation.emit({ type: "tabLongPress", target: route.key });
 
-          return <DockCommand command={command} focused={focused} key={route.key} onLongPress={onLongPress} onPress={onPress} wide={isIpadLandscape} width={isIpadLandscape ? iPadCommandWidth : undefined} />;
+          return (
+            <View key={route.key} style={[styles.commandSlot, isIpadLandscape && styles.iPadCommandSlot, isIpadLandscape ? { width: iPadCommandWidth } : undefined]}>
+              <DockCommand command={command} focused={focused} onLongPress={onLongPress} onPress={onPress} />
+            </View>
+          );
         })}
       </View>
     </View>
@@ -97,6 +101,7 @@ const styles = StyleSheet.create({
   shell: { paddingHorizontal: 14, paddingTop: 8, backgroundColor: "transparent" },
   dock: { height: 64, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", paddingHorizontal: 4, overflow: "hidden", shadowColor: "#000", shadowOpacity: 0.24, shadowOffset: { width: 0, height: 10 }, shadowRadius: 20, elevation: 12 },
   signalLine: { position: "absolute", top: 0, left: 28, right: 28, height: 1, opacity: 0.8 },
+  commandSlot: { flex: 1, minWidth: 0 },
   command: { flex: 1, minWidth: 0, marginVertical: 6, borderRadius: 18, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   activePill: { ...StyleSheet.absoluteFillObject, borderRadius: 18 },
   noirActiveMarker: { left: 0, right: undefined, top: 10, bottom: 10, width: 2, borderRadius: 0 },
@@ -106,5 +111,5 @@ const styles = StyleSheet.create({
   noirDock: { borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, shadowOpacity: 0 },
   iPadShell: { alignItems: "center", paddingHorizontal: 0, paddingTop: 5 },
   iPadDock: { height: 56 },
-  iPadCommand: { flex: 0, flexShrink: 0 },
+  iPadCommandSlot: { flexGrow: 0, flexShrink: 0 },
 });
