@@ -272,7 +272,7 @@ const SphynxContext = createContext<SphynxContextValue | null>(null);
 
 export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [themeId, setThemeIdState] = useState<ThemeId>("obsidian");
-  const [materialId, setMaterialIdState] = useState<AppMaterialId>("core");
+  const [materialId, setMaterialIdState] = useState<AppMaterialId>("noir-pulse");
   const [activeListeningProfileId, setActiveListeningProfileIdState] = useState<ListeningProfileId>("sora");
   const [profileQueueContinuity, setProfileQueueContinuityState] = useState(true);
   const [profileCustomizations, setProfileCustomizations] = useState<Partial<Record<ListeningProfileId, ListeningProfileCustomization>>>({});
@@ -330,7 +330,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
           connected?: Partial<Record<ProviderId, boolean>>;
         };
         if (parsed.themeId && themes[parsed.themeId]) setThemeIdState(parsed.themeId);
-        if (parsed.materialPreviewRevision !== 1) {
+        if (parsed.materialPreviewRevision !== 2) {
           setMaterialIdState("noir-pulse");
         } else if (parsed.materialId && appMaterials[parsed.materialId]) {
           setMaterialIdState(parsed.materialId);
@@ -350,7 +350,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!preferencesHydrated) return;
-    const preferences = JSON.stringify({ themeId, materialId, materialPreviewRevision: 1, activeListeningProfileId, profileQueueContinuity, profileCustomizations, queueOrder, profileQueueOrders, profilePinnedTrackIds, sound, connected });
+    const preferences = JSON.stringify({ themeId, materialId, materialPreviewRevision: 2, activeListeningProfileId, profileQueueContinuity, profileCustomizations, queueOrder, profileQueueOrders, profilePinnedTrackIds, sound, connected });
     AsyncStorage.setItem(STORAGE_KEY, preferences).catch(() => undefined);
   }, [activeListeningProfileId, connected, materialId, preferencesHydrated, profileCustomizations, profilePinnedTrackIds, profileQueueContinuity, profileQueueOrders, queueOrder, sound, themeId]);
 

@@ -20,7 +20,7 @@ const COMMANDS: Record<string, { label: string; icon: IconName }> = {
   profile: { label: "Identity", icon: "person-outline" },
 };
 
-function DockCommand({ command, focused, onPress, onLongPress }: { command: { label: string; icon: IconName }; focused: boolean; onPress: () => void; onLongPress: () => void }) {
+function DockCommand({ command, focused, onPress, onLongPress, wide }: { command: { label: string; icon: IconName }; focused: boolean; onPress: () => void; onLongPress: () => void; wide: boolean }) {
   const { material, sound, theme } = useSphynx();
   const isNoirPulse = material.id === "noir-pulse";
   const selected = useSharedValue(focused ? 1 : 0);
@@ -45,7 +45,7 @@ function DockCommand({ command, focused, onPress, onLongPress }: { command: { la
       onLongPress={onLongPress}
       onPress={onPress}
       emphasis="compact"
-      style={styles.command}
+      style={[styles.command, wide && styles.iPadCommand]}
     >
       <Animated.View pointerEvents="none" style={[styles.activePill, isNoirPulse && styles.noirActiveMarker, { backgroundColor: cue }, activePillStyle]} />
       <View style={styles.commandContent}>
@@ -84,7 +84,7 @@ export function OkamiCommandDock({ state, descriptors, navigation }: BottomTabBa
           };
           const onLongPress = () => navigation.emit({ type: "tabLongPress", target: route.key });
 
-          return <DockCommand command={command} focused={focused} key={route.key} onLongPress={onLongPress} onPress={onPress} />;
+          return <DockCommand command={command} focused={focused} key={route.key} onLongPress={onLongPress} onPress={onPress} wide={isIpadLandscape} />;
         })}
       </View>
     </View>
@@ -103,5 +103,6 @@ const styles = StyleSheet.create({
   noirShell: { paddingHorizontal: 0, paddingTop: 0 },
   noirDock: { borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, shadowOpacity: 0 },
   iPadShell: { alignItems: "center", paddingHorizontal: 0, paddingTop: 5 },
-  iPadDock: { width: "58%", maxWidth: 740, height: 56 },
+  iPadDock: { width: "58%", minWidth: 520, maxWidth: 740, height: 56 },
+  iPadCommand: { flexGrow: 0, flexShrink: 0, flexBasis: "20%" },
 });
