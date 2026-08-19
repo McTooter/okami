@@ -8,6 +8,7 @@ import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/li
 import { findListeningProfile, mergeListeningProfiles, movePinnedTrackId, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders, reorderPinnedTrackIds } from "../lib/listening-profile-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { formatLibraryCount, selectLibraryRotation } from "../lib/okami-library-core";
+import { getNoirPulseMotionPlan } from "../lib/noir-pulse-motion-core";
 import { applyQueueOrder, moveQueueId } from "../lib/queue-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
 
@@ -18,6 +19,12 @@ describe("Sphynx playback boundaries", () => {
     expect(formatLibraryCount(-2.4)).toBe("00");
     expect(selectLibraryRotation([{ id: "pinned" }], library)).toEqual([{ id: "pinned" }]);
     expect(selectLibraryRotation([], library)).toEqual([{ id: "a" }, { id: "b" }, { id: "c" }]);
+  });
+
+  it("keeps Noir Pulse kinetic motion bounded and honors reduced-motion settings", () => {
+    expect(getNoirPulseMotionPlan("noir-pulse", false)).toMatchObject({ enabled: true, entryDuration: 520, routeSweepDuration: 390, hazeOpacity: 0.16 });
+    expect(getNoirPulseMotionPlan("noir-pulse", true)).toMatchObject({ enabled: false, entryDuration: 0, routeSweepDuration: 0, hazeOpacity: 0.09 });
+    expect(getNoirPulseMotionPlan("core", false)).toMatchObject({ enabled: false, hazeOpacity: 0 });
   });
 
   it("clamps user-controlled progress to the valid playback range", () => {

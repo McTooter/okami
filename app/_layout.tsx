@@ -10,6 +10,7 @@ import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { SphynxProvider } from "@/lib/sphynx-store";
 import { ArtworkTransitionProvider } from "@/components/sphynx/artwork-transition";
+import { NoirPulseKineticLayer } from "@/components/sphynx/noir-pulse-kinetic-layer";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -105,7 +106,7 @@ export default function RootLayout() {
         <SafeAreaProvider initialMetrics={providerInitialMetrics}>
           <SafeAreaFrameContext.Provider value={frame}>
             <SafeAreaInsetsContext.Provider value={insets}>
-              <SphynxProvider><ArtworkTransitionProvider>{content}</ArtworkTransitionProvider></SphynxProvider>
+              <SphynxProvider><ArtworkTransitionProvider><NoirPulseKineticLayer />{content}</ArtworkTransitionProvider></SphynxProvider>
             </SafeAreaInsetsContext.Provider>
           </SafeAreaFrameContext.Provider>
         </SafeAreaProvider>
@@ -116,7 +117,7 @@ export default function RootLayout() {
   return (
       <ThemeProvider>
       <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-        <SphynxProvider><ArtworkTransitionProvider>{content}</ArtworkTransitionProvider></SphynxProvider>
+        <SphynxProvider><ArtworkTransitionProvider><NoirPulseKineticLayer />{content}</ArtworkTransitionProvider></SphynxProvider>
       </SafeAreaProvider>
     </ThemeProvider>
   );
