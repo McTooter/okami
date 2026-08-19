@@ -8,6 +8,7 @@ import { listeningFieldTiltFromPoint, MAX_LISTENING_FIELD_TILT } from "../lib/li
 import { findListeningProfile, mergeListeningProfiles, movePinnedTrackId, normalizePinnedTrackIds, normalizeProfileCustomization, normalizeProfilePinnedTrackIds, normalizeProfileQueueOrders, reorderPinnedTrackIds } from "../lib/listening-profile-core";
 import { buildLocalImportIdentity } from "../lib/local-music-core";
 import { formatLibraryCount, selectLibraryRotation } from "../lib/okami-library-core";
+import { isWideLibraryCanvas } from "../lib/okami-layout-core";
 import { getNoirPulseMotionPlan } from "../lib/noir-pulse-motion-core";
 import { applyQueueOrder, moveQueueId } from "../lib/queue-core";
 import { adjustPreamp, advanceProgress, clamp, nextTrackIndex } from "../lib/sphynx-core";
@@ -25,6 +26,12 @@ describe("Sphynx playback boundaries", () => {
     expect(getNoirPulseMotionPlan("noir-pulse", false)).toMatchObject({ enabled: true, fieldEstablishDuration: 360, panelDelay: 112, panelSweepDuration: 560, seamDelay: 308, seamSweepDuration: 380, contentRevealDelay: 418, contentRevealDuration: 220, hazeOpacity: 0.12 });
     expect(getNoirPulseMotionPlan("noir-pulse", true)).toMatchObject({ enabled: false, fieldEstablishDuration: 0, panelDelay: 0, panelSweepDuration: 0, seamDelay: 0, seamSweepDuration: 0, contentRevealDelay: 0, contentRevealDuration: 0, hazeOpacity: 0.08 });
     expect(getNoirPulseMotionPlan("core", false)).toMatchObject({ enabled: false, hazeOpacity: 0 });
+  });
+
+  it("uses the Library split view only on a genuinely wide landscape canvas", () => {
+    expect(isWideLibraryCanvas(1180, 820)).toBe(true);
+    expect(isWideLibraryCanvas(820, 1180)).toBe(false);
+    expect(isWideLibraryCanvas(844, 390)).toBe(false);
   });
 
   it("clamps user-controlled progress to the valid playback range", () => {

@@ -293,6 +293,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   const [isImporting, setIsImporting] = useState(false);
   const [localImportMessage, setLocalImportMessage] = useState<string | null>(null);
   const [localLibraryHydrated, setLocalLibraryHydrated] = useState(false);
+  const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const [playbackSeconds, setPlaybackSeconds] = useState(0);
   const [playbackDuration, setPlaybackDuration] = useState(0);
   const [localPlaybackError, setLocalPlaybackError] = useState<string | null>(null);
@@ -311,10 +312,14 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((stored) => {
-        if (!stored) return;
+        if (!stored) {
+          setMaterialIdState("noir-pulse");
+          return;
+        }
         const parsed = JSON.parse(stored) as {
           themeId?: ThemeId;
           materialId?: AppMaterialId;
+          materialPreviewRevision?: number;
           activeListeningProfileId?: ListeningProfileId;
           profileQueueContinuity?: boolean;
           profileCustomizations?: unknown;
@@ -325,7 +330,11 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
           connected?: Partial<Record<ProviderId, boolean>>;
         };
         if (parsed.themeId && themes[parsed.themeId]) setThemeIdState(parsed.themeId);
-        if (parsed.materialId && appMaterials[parsed.materialId]) setMaterialIdState(parsed.materialId);
+        if (parsed.materialPreviewRevision !== 1) {
+          setMaterialIdState("noir-pulse");
+        } else if (parsed.materialId && appMaterials[parsed.materialId]) {
+          setMaterialIdState(parsed.materialId);
+        }
         if (parsed.activeListeningProfileId && ["sora", "night-transit", "guest-session"].includes(parsed.activeListeningProfileId)) setActiveListeningProfileIdState(parsed.activeListeningProfileId);
         if (typeof parsed.profileQueueContinuity === "boolean") setProfileQueueContinuityState(parsed.profileQueueContinuity);
         setProfileCustomizations(normalizeProfileCustomizations(parsed.profileCustomizations));
@@ -335,13 +344,15 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
         if (parsed.sound) setSoundState((current) => normalizeAudioSettings({ ...current, ...parsed.sound, eq: parsed.sound?.eq ?? current.eq }));
         if (parsed.connected) setConnectedState((current) => ({ ...current, ...parsed.connected }));
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => setPreferencesHydrated(true));
   }, []);
 
   useEffect(() => {
-    const preferences = JSON.stringify({ themeId, materialId, activeListeningProfileId, profileQueueContinuity, profileCustomizations, queueOrder, profileQueueOrders, profilePinnedTrackIds, sound, connected });
+    if (!preferencesHydrated) return;
+    const preferences = JSON.stringify({ themeId, materialId, materialPreviewRevision: 1, activeListeningProfileId, profileQueueContinuity, profileCustomizations, queueOrder, profileQueueOrders, profilePinnedTrackIds, sound, connected });
     AsyncStorage.setItem(STORAGE_KEY, preferences).catch(() => undefined);
-  }, [activeListeningProfileId, connected, materialId, profileCustomizations, profilePinnedTrackIds, profileQueueContinuity, profileQueueOrders, queueOrder, sound, themeId]);
+  }, [activeListeningProfileId, connected, materialId, preferencesHydrated, profileCustomizations, profilePinnedTrackIds, profileQueueContinuity, profileQueueOrders, queueOrder, sound, themeId]);
 
   useEffect(() => {
     AsyncStorage.getItem(LOCAL_LIBRARY_KEY)

@@ -111,3 +111,5 @@
 - [x] Replace the rejected generic Noir Pulse treatment with a restrained full-bleed kinetic composition and a minimal Library hierarchy.
 - [x] Refine Noir Pulse timing into a smoother staged sequence with red-field establishment, diagonal black-panel sweep, white-seam resolution, and delayed content entry.
 - [x] Research public kinetic menu and transition principles from the requested reference style, then implement original Okami navigation and animation refinements.
+- [x] Run the SideStore unsigned IPA workflow from the newly published Noir Pulse update and confirm the updated artifact is available.
+- [x] Rebuild the live iPad landscape Library composition and show the original Noir Pulse material directly in the preview.

@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { type ComponentProps, useEffect } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { haptic } from "@/lib/haptics";
+import { isWideLibraryCanvas } from "@/lib/okami-layout-core";
 import { useSphynx } from "@/lib/sphynx-store";
 import { MotionPressable } from "./motion-pressable";
 
@@ -62,12 +63,14 @@ export function OkamiCommandDock({ state, descriptors, navigation }: BottomTabBa
   const { material, theme } = useSphynx();
   const isNoirPulse = material.id === "noir-pulse";
   const insets = useSafeAreaInsets();
+  const { height, width } = useWindowDimensions();
+  const isIpadLandscape = isWideLibraryCanvas(width, height);
   const cue = material.cue ?? theme.accent;
   const bottomInset = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 10);
 
   return (
-    <View style={[styles.shell, isNoirPulse && styles.noirShell, { paddingBottom: bottomInset }]}>
-      <View style={[styles.dock, isNoirPulse && styles.noirDock, { backgroundColor: theme.raised, borderColor: theme.border }]}>
+    <View style={[styles.shell, isNoirPulse && styles.noirShell, isIpadLandscape && styles.iPadShell, { paddingBottom: bottomInset }]}>
+      <View style={[styles.dock, isNoirPulse && styles.noirDock, isIpadLandscape && styles.iPadDock, { backgroundColor: theme.raised, borderColor: theme.border }]}>
         <View pointerEvents="none" style={[styles.signalLine, { backgroundColor: cue }]} />
         {state.routes.map((route, index) => {
           const focused = state.index === index;
@@ -99,4 +102,6 @@ const styles = StyleSheet.create({
   commandLabel: { fontSize: 9, lineHeight: 11, fontWeight: "800", letterSpacing: 0.18 },
   noirShell: { paddingHorizontal: 0, paddingTop: 0 },
   noirDock: { borderRadius: 0, borderLeftWidth: 0, borderRightWidth: 0, shadowOpacity: 0 },
+  iPadShell: { alignItems: "center", paddingHorizontal: 0, paddingTop: 5 },
+  iPadDock: { width: "58%", maxWidth: 740, height: 56 },
 });

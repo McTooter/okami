@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, View, type View as ViewType } from "react-native";
+import { StyleSheet, Text, useWindowDimensions, View, type View as ViewType } from "react-native";
 import { useRef } from "react";
 
 import { AnimatedAlbumArt } from "@/components/sphynx/animated-album-art";
 import { MotionPressable } from "@/components/sphynx/motion-pressable";
 import { haptic } from "@/lib/haptics";
+import { isWideLibraryCanvas } from "@/lib/okami-layout-core";
 import { type Track, useSphynx } from "@/lib/sphynx-store";
 import { useArtworkTransition } from "./artwork-transition";
 
@@ -69,6 +70,8 @@ export function MiniPlayer() {
   const artworkRef = useRef<ViewType>(null);
   const { beginArtworkTransition } = useArtworkTransition();
   const { sound, theme, currentTrack, isPlaying, progress, togglePlayback } = useSphynx();
+  const { height, width } = useWindowDimensions();
+  const isIpadLandscape = isWideLibraryCanvas(width, height);
   const openPlayer = () => {
     if (sound.motionReduced || !artworkRef.current) {
       router.push("/now-playing");
@@ -80,7 +83,7 @@ export function MiniPlayer() {
     });
   };
   return (
-    <View style={[styles.miniPlayerShell, { borderColor: theme.border, backgroundColor: theme.raised }]}>
+    <View style={[styles.miniPlayerShell, isIpadLandscape && styles.iPadMiniPlayerShell, { borderColor: theme.border, backgroundColor: theme.raised }]}>
       <View style={[styles.progressTrack, { backgroundColor: theme.border }]}>
         <View style={[styles.progressFill, { backgroundColor: currentTrack.accent, width: `${Math.max(2, progress * 100)}%` }]} />
       </View>
@@ -90,7 +93,7 @@ export function MiniPlayer() {
         style={styles.miniTapArea}
       >
         <View ref={artworkRef} collapsable={false}>
-          <AnimatedAlbumArt artwork={currentTrack.artwork} size={42} radius={11} accent={currentTrack.accent} active={isPlaying} motionReduced={sound.motionReduced} />
+          <AnimatedAlbumArt artwork={currentTrack.artwork} size={isIpadLandscape ? 38 : 42} radius={isIpadLandscape ? 0 : 11} accent={currentTrack.accent} active={isPlaying} motionReduced={sound.motionReduced} />
         </View>
         <View style={styles.miniCopy}>
           <Text numberOfLines={1} style={[styles.miniTitle, { color: theme.foreground }]}>
@@ -109,7 +112,7 @@ export function MiniPlayer() {
         }}
         hitSlop={8}
         emphasis="primary"
-        style={styles.miniTransport}
+        style={[styles.miniTransport, isIpadLandscape && styles.iPadMiniTransport]}
       >
         <Ionicons name={isPlaying ? "pause" : "play"} size={21} color={theme.foreground} />
       </MotionPressable>
@@ -167,6 +170,7 @@ const styles = StyleSheet.create({
   duration: { fontSize: 11, fontVariant: ["tabular-nums"] },
   moreButton: { width: 32, height: 36, alignItems: "center", justifyContent: "center" },
   miniPlayerShell: { position: "absolute", left: 12, right: 12, bottom: 8, height: 62, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", paddingHorizontal: 10, overflow: "hidden", zIndex: 10, shadowColor: "#000", shadowOpacity: 0.28, shadowRadius: 16, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
+  iPadMiniPlayerShell: { left: "24%", right: undefined, width: "52%", bottom: 10, height: 56, borderRadius: 0, paddingHorizontal: 9, shadowOpacity: 0.16 },
   progressTrack: { position: "absolute", top: 0, left: 0, right: 0, height: 2 },
   progressFill: { height: 2 },
   miniTapArea: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 10 },
@@ -174,6 +178,7 @@ const styles = StyleSheet.create({
   miniTitle: { fontSize: 13, lineHeight: 16, fontWeight: "700" },
   miniArtist: { fontSize: 11, lineHeight: 14 },
   miniTransport: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
+  iPadMiniTransport: { width: 36, height: 36 },
   sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 },
   eyebrow: { fontSize: 10, fontWeight: "800", letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 4 },
   sectionTitle: { fontSize: 22, lineHeight: 27, fontWeight: "700", letterSpacing: -0.45 },
