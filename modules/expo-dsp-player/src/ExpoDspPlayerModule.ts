@@ -18,7 +18,7 @@ const nativeModule = requireOptionalNativeModule<NativeDspPlayerModule>("ExpoDsp
 export const dspPlaybackAvailable = Boolean(nativeModule);
 
 function unavailable(): never {
-  throw new Error("Sphynx DSP playback requires a custom iOS build.");
+  throw new Error("Okami DSP playback requires a custom iOS build.");
 }
 
 export function loadDspTrack(uri: string, configuration: DspPlaybackConfiguration) {

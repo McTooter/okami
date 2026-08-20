@@ -23,7 +23,7 @@ export async function pickLocalMusicFiles(): Promise<ImportedLocalFile[]> {
   const documentsDirectory = FileSystem.documentDirectory;
   const localLibraryDirectory = documentsDirectory ? `${documentsDirectory}sphynx-library` : null;
   if (Platform.OS !== "web" && !localLibraryDirectory) {
-    throw new Error("Sphynx could not access app storage for this import.");
+    throw new Error("Okami could not access app storage for this import.");
   }
 
   if (localLibraryDirectory) {

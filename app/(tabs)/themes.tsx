@@ -19,7 +19,7 @@ export default function ThemesTab() {
         <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(240)}>
           <Text style={[styles.eyebrow, { color: material.cue ?? theme.accent }]}>APP MATERIAL</Text>
           <Text style={[styles.title, { color: theme.foreground }]}>Theme Studio</Text>
-          <Text style={[styles.subtitle, { color: theme.muted }]}>Change how Sphynx moves, cues, and frames the music. Your base palette remains untouched.</Text>
+          <Text style={[styles.subtitle, { color: theme.muted }]}>Choose the visual language that moves, cues, and frames your music. Your base palette remains untouched.</Text>
         </Animated.View>
 
         <View style={[styles.preview, { backgroundColor: theme.surface, borderColor: material.cue ?? theme.border }]}> 
@@ -38,7 +38,7 @@ export default function ThemesTab() {
 
         <View style={styles.sectionHeading}>
           <Text style={[styles.sectionTitle, { color: theme.foreground }]}>Material studies</Text>
-          <Text style={[styles.sectionMeta, { color: theme.muted }]}>Original Sphynx modes</Text>
+          <Text style={[styles.sectionMeta, { color: theme.muted }]}>Original Okami materials</Text>
         </View>
 
         <View style={styles.cards}>
@@ -73,7 +73,7 @@ export default function ThemesTab() {
 
         <View style={[styles.note, { backgroundColor: theme.raised, borderColor: theme.border }]}>
           <Ionicons name="information-circle-outline" size={17} color={material.cue ?? theme.accent} />
-          <Text style={[styles.noteText, { color: theme.muted }]}>Theme Studio changes Sphynx’s interaction material and Listening Field. Palette and reduced-motion controls stay available in Theme Atelier.</Text>
+          <Text style={[styles.noteText, { color: theme.muted }]}>Theme Studio changes Okami’s interaction material and Listening Field. Palette and reduced-motion controls stay available in Theme Atelier.</Text>
         </View>
       </ScrollView>
       <MiniPlayer />

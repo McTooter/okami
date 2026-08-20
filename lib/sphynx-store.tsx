@@ -330,7 +330,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
           connected?: Partial<Record<ProviderId, boolean>>;
         };
         if (parsed.themeId && themes[parsed.themeId]) setThemeIdState(parsed.themeId);
-        if (parsed.materialPreviewRevision !== 2) {
+        if (parsed.materialPreviewRevision !== 3) {
           setMaterialIdState("noir-pulse");
         } else if (parsed.materialId && appMaterials[parsed.materialId]) {
           setMaterialIdState(parsed.materialId);
@@ -350,7 +350,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!preferencesHydrated) return;
-    const preferences = JSON.stringify({ themeId, materialId, materialPreviewRevision: 2, activeListeningProfileId, profileQueueContinuity, profileCustomizations, queueOrder, profileQueueOrders, profilePinnedTrackIds, sound, connected });
+    const preferences = JSON.stringify({ themeId, materialId, materialPreviewRevision: 3, activeListeningProfileId, profileQueueContinuity, profileCustomizations, queueOrder, profileQueueOrders, profilePinnedTrackIds, sound, connected });
     AsyncStorage.setItem(STORAGE_KEY, preferences).catch(() => undefined);
   }, [activeListeningProfileId, connected, materialId, preferencesHydrated, profileCustomizations, profilePinnedTrackIds, profileQueueContinuity, profileQueueOrders, queueOrder, sound, themeId]);
 
@@ -630,7 +630,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
         .then((status) => handleDspStatus(dspTrackIdRef.current ?? "", status))
         .catch(() => {
           setDspProcessingActive(false);
-          setLocalPlaybackError("Sphynx could not update the DSP path. Standard playback remains available.");
+          setLocalPlaybackError("Okami could not update the DSP path. Standard playback remains available.");
         });
     }
   }, [handleDspStatus, sound]);
@@ -681,7 +681,7 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
       return true;
     } catch {
       setIsPlaying(false);
-      setLocalPlaybackError("Sphynx could not play this local file. Try MP3, AAC, M4A, or WAV.");
+      setLocalPlaybackError("Okami could not play this local file. Try MP3, AAC, M4A, or WAV.");
       return false;
     }
   }, [handleNativeStatus, playDspLocalTrack, sound.outputTrim, sound.pitchCorrectionEnabled, sound.pitchCorrectionQuality, sound.playbackRate, sound.repeatOne, stopNativePlayer]);
@@ -693,9 +693,9 @@ export function SphynxProvider({ children }: { children: React.ReactNode }) {
     if (currentTrack.localUri && dspTrackIdRef.current === currentTrack.id && duration > 0) {
       void seekDspTrack(duration * bounded)
         .then((status) => handleDspStatus(currentTrack.id, status))
-        .catch(() => setLocalPlaybackError("Sphynx could not seek in this file."));
+        .catch(() => setLocalPlaybackError("Okami could not seek in this file."));
     } else if (currentTrack.localUri && player && duration > 0) {
-      void player.seekTo(duration * bounded).catch(() => setLocalPlaybackError("Sphynx could not seek in this file."));
+      void player.seekTo(duration * bounded).catch(() => setLocalPlaybackError("Okami could not seek in this file."));
     }
   }, [currentTrack, handleDspStatus, playbackDuration]);
   const playTrack = useCallback((track: Track) => {

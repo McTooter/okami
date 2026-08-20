@@ -114,3 +114,4 @@
 - [x] Run the SideStore unsigned IPA workflow from the newly published Noir Pulse update and confirm the updated artifact is available.
 - [x] Rebuild the live iPad landscape Library composition and show the original Noir Pulse material directly in the preview.
 - [x] Correct the iPad landscape command dock so all five routes remain legible and evenly distributed.
+- [x] Diagnose and correct the installed iPad build showing legacy Sphynx copy and Studio Core instead of Okami Noir Pulse.

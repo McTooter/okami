@@ -16,7 +16,7 @@ export async function exportAudioSettings(
     return { ok: false, message: "Export is available from the iPhone or Android share sheet." };
   }
   if (!FileSystem.cacheDirectory) {
-    return { ok: false, message: "Sphynx could not prepare the export file." };
+    return { ok: false, message: "Okami could not prepare the export file." };
   }
   if (!(await Sharing.isAvailableAsync())) {
     return { ok: false, message: "Sharing is unavailable on this device." };
@@ -26,7 +26,7 @@ export async function exportAudioSettings(
   const uri = `${FileSystem.cacheDirectory}sphynx-audio-settings-${Date.now()}.json`;
   await FileSystem.writeAsStringAsync(uri, JSON.stringify(payload, null, 2), { encoding: FileSystem.EncodingType.UTF8 });
   await Sharing.shareAsync(uri, {
-    dialogTitle: "Export Sphynx audio settings",
+    dialogTitle: "Export Okami audio settings",
     mimeType: "application/json",
     UTI: "public.json",
   });

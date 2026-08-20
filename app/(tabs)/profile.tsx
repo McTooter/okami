@@ -72,7 +72,7 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View entering={motionReduced ? undefined : FadeInDown.duration(310).easing(Easing.out(Easing.cubic))} style={styles.topLine}>
           <View>
-            <Text style={[styles.kicker, { color: cue }]}>SPHYNX / LISTENING IDENTITY</Text>
+            <Text style={[styles.kicker, { color: cue }]}>OKAMI / LISTENING IDENTITY</Text>
             <Text style={[styles.pageTitle, { color: theme.foreground }]}>Profile</Text>
           </View>
           <View style={[styles.monogram, { backgroundColor: profileCue }]}><Text style={[styles.monogramText, { color: material.cueInk ?? theme.accentInk }]}>{activeListeningProfile.name.slice(0, 1).toUpperCase()}</Text></View>
@@ -310,7 +310,7 @@ export default function ProfileScreen() {
           <SettingRow icon="link-outline" title="Connected services" note={`${activeServices} active · source-aware access`} onPress={() => router.push("/connected-services" as never)} />
           <SettingRow icon="accessibility-outline" title="Comfort" note={`${sound.typeScale} type · ${sound.motionReduced ? "reduced motion" : "standard motion"}`} onPress={() => router.push("/theme-atelier" as never)} />
         </View>
-        <View style={{ height: 92 }} />
+        <View style={styles.bottomClearance} />
       </ScrollView>
       <MiniPlayer />
     </ScreenContainer>
@@ -318,7 +318,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: 20, paddingTop: 18 },
+  scroll: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 24 },
   topLine: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 },
   kicker: { fontSize: 10, letterSpacing: 1.3, fontWeight: "800", marginBottom: 5 },
   pageTitle: { fontSize: 31, lineHeight: 37, letterSpacing: -1.15, fontWeight: "800" },
@@ -384,4 +384,5 @@ const styles = StyleSheet.create({
   settingCopy: { flex: 1, minWidth: 0 },
   settingTitle: { fontSize: 15, fontWeight: "700" },
   settingNote: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  bottomClearance: { height: 140 },
 });
